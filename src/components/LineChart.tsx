@@ -137,7 +137,8 @@ export const LineChart: React.FC<LineChartProps> = ({ tempData, humData, timeLab
       ctx.stroke();
       ctx.restore();
 
-      // Dots and X Axis Labels
+      // Dots and X Axis Labels with spacing check to prevent text collision
+      let lastDrawnX = -999;
       tempPoints.forEach((pt, idx) => {
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2);
@@ -155,9 +156,16 @@ export const LineChart: React.FC<LineChartProps> = ({ tempData, humData, timeLab
           ctx.font = '9.5px Inter, sans-serif';
           const label = timeLabels[idx];
           const textWidth = ctx.measureText(label).width;
-          let textX = pt.x - textWidth / 2;
-          textX = Math.max(0, Math.min(width - textWidth, textX));
-          ctx.fillText(label, textX, chartHeight + 16);
+
+          const isFirstOrLast = idx === 0 || idx === timeLabels.length - 1;
+          const hasEnoughSpace = pt.x - lastDrawnX > 55 || isFirstOrLast;
+
+          if (hasEnoughSpace) {
+            let textX = pt.x - textWidth / 2;
+            textX = Math.max(0, Math.min(width - textWidth, textX));
+            ctx.fillText(label, textX, chartHeight + 16);
+            lastDrawnX = pt.x;
+          }
         }
       });
 
