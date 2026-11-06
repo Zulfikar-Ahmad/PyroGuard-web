@@ -137,8 +137,8 @@ export const LineChart: React.FC<LineChartProps> = ({ tempData, humData, timeLab
       ctx.stroke();
       ctx.restore();
 
-      // Dots and X Axis Labels with spacing check to prevent text collision
-      let lastDrawnX = -999;
+      // Dots and X Axis Labels with robust Bounding Box collision check
+      let lastDrawnRightEdge = -999;
       tempPoints.forEach((pt, idx) => {
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2);
@@ -158,13 +158,13 @@ export const LineChart: React.FC<LineChartProps> = ({ tempData, humData, timeLab
           const textWidth = ctx.measureText(label).width;
 
           const isFirstOrLast = idx === 0 || idx === timeLabels.length - 1;
-          const hasEnoughSpace = pt.x - lastDrawnX > 55 || isFirstOrLast;
+          const textX = pt.x - textWidth / 2;
 
-          if (hasEnoughSpace) {
-            let textX = pt.x - textWidth / 2;
-            textX = Math.max(0, Math.min(width - textWidth, textX));
-            ctx.fillText(label, textX, chartHeight + 16);
-            lastDrawnX = pt.x;
+          // Only draw if it does not overlap the bounding box of the previously drawn label
+          if (textX > lastDrawnRightEdge + 12 || isFirstOrLast) {
+            const clampedX = Math.max(0, Math.min(width - textWidth, textX));
+            ctx.fillText(label, clampedX, chartHeight + 16);
+            lastDrawnRightEdge = clampedX + textWidth;
           }
         }
       });
