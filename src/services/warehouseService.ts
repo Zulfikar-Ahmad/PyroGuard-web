@@ -5,41 +5,77 @@ type Listener = (state: TelemetryState) => void;
 class WarehouseService {
   private static instance: WarehouseService;
   private listeners: Set<Listener> = new Set();
-  private timer: number | null = null;
-  private logCounter = 1;
+  private connectionTimer: number | null = null;
+  private scheduleCheckTimer: number | null = null;
+  private lastSavedDate: string = '';
+
+  /*
+   * ============================================================================
+   * CONFIGURATION KEYS FOR MQTT BROKER & MYSQL DATABASE / REST API
+   * ============================================================================
+   * 1. MQTT Broker Details: Edit in Settings page or change defaults below:
+   *    - Host: mqttHost (default: "broker.emqx.io" / "192.168.1.105")
+   *    - Port: mqttPort (default: 1883 / 8083)
+   *    - Topic: mqttTopic (default: "warehouse/sensors/telemetry")
+   *
+   * 2. MySQL / Backend API Details: Edit in Settings page or change defaults below:
+   *    - API Endpoint: mysqlApiEndpoint (e.g. "https://api.pyroguard.app/history")
+   *    - Database Host: mysqlDbHost (e.g. "127.0.0.1" / "db.pyroguard.app")
+   *    - Database Name: mysqlDbName (default: "pyroguard_db")
+   * ============================================================================
+   */
 
   private state: TelemetryState = {
-    temperature: 28.5,
-    humidity: 62.0,
-    smoke: 12.0,
+    isDeviceConnected: false,
+    temperature: 0,
+    humidity: 0,
+    smoke: 0,
     flameDetected: false,
-    systemStatus: 'Aman',
+    systemStatus: 'Offline',
     tempThreshold: 45.0,
     smokeThreshold: 30.0,
     wifiSsid: 'PyroGuard_Warehouse_5G',
     wifiPass: 'GudangUtama2024!',
-    espIpAddress: '192.168.1.105',
+
+    // MQTT Configuration
+    mqttHost: '192.168.1.105',
     mqttPort: 1883,
-    nanoStatus: 'Active (UART Sync OK)',
+    mqttTopic: 'warehouse/sensors/telemetry',
+    mqttUser: 'admin',
+    mqttPass: 'pyroguard123',
+
+    // MySQL / Database Configuration
+    mysqlApiEndpoint: 'https://api.pyroguard.app/api/history',
+    mysqlDbHost: '127.0.0.1',
+    mysqlDbPort: 3306,
+    mysqlDbName: 'pyroguard_db',
+    mysqlDbUser: 'pyroguard_user',
+    mysqlDbPass: 'pyroguard_pass',
+
+    // History Schedule Config (Default: 03:00 AM)
+    scheduledSaveTime: '03:00',
+
+    espIpAddress: '192.168.1.105',
+    nanoStatus: 'Standby (Awaiting ESP32)',
     exhaustFan: false,
     sprinkler: false,
     sirenAlarm: false,
     isEmergencyMode: false,
     isPaused: false,
-    tempHistory: [27.0, 27.5, 28.0, 28.2, 28.5, 28.1, 28.4, 28.5],
-    humHistory: [60, 61, 62, 63, 62, 61, 62, 62],
-    timeHistory: ['10:00:00', '10:00:05', '10:00:10', '10:00:15', '10:00:20', '10:00:25', '10:00:30', '10:00:35'],
+
+    tempHistory: [0, 0, 0, 0, 0, 0, 0, 0],
+    humHistory: [0, 0, 0, 0, 0, 0, 0, 0],
+    timeHistory: ['--:--:--', '--:--:--', '--:--:--', '--:--:--', '--:--:--', '--:--:--', '--:--:--', '--:--:--'],
     logRecords: [],
     mqttLogs: [
-      `[${this.formatTime(new Date())}] [MQTT CONNECTED] Connected to broker 192.168.1.105:1883`,
-      `[${this.formatTime(new Date())}] [UART] Arduino Nano V3 Sync OK`,
-      `[${this.formatTime(new Date())}] [PUBLISH] warehouse/sensors/telemetry -> Temp:28.5C Hum:62% Smoke:12%`,
+      `[${this.formatTime(new Date())}] [SYSTEM] Memulai sistem monitoring MQTT & MySQL...`,
+      `[${this.formatTime(new Date())}] [INFO] Menunggu aliran data stream dari ESP32-S3 (Topic: warehouse/sensors/telemetry)...`,
     ],
   };
 
   private constructor() {
-    this.addLogRecord(this.state.temperature, this.state.humidity, this.state.smoke, this.state.flameDetected, 'Aman');
-    this.startSimulation();
+    this.startScheduleChecker();
+    this.initMqttConnection();
   }
 
   public static getInstance(): WarehouseService {
@@ -64,130 +100,219 @@ class WarehouseService {
     this.listeners.forEach((listener) => listener(currentState));
   }
 
-  private formatTime(date: DateTimeFormatInput = new Date()): string {
-    const d = new Date(date);
-    const h = d.getHours().toString().padStart(2, '0');
-    const m = d.getMinutes().toString().padStart(2, '0');
-    const s = d.getSeconds().toString().padStart(2, '0');
+  private formatTime(date: Date = new Date()): string {
+    const h = date.getHours().toString().padStart(2, '0');
+    const m = date.getMinutes().toString().padStart(2, '0');
+    const s = date.getSeconds().toString().padStart(2, '0');
     return `${h}:${m}:${s}`;
   }
 
-  private startSimulation() {
-    if (this.timer !== null) return;
-    this.timer = window.setInterval(() => {
-      this.tickSimulation();
-    }, 1000);
+  private formatDateKey(date: Date = new Date()): string {
+    const y = date.getFullYear();
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const d = date.getDate().toString().padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
-  private tickSimulation() {
-    if (this.state.isPaused) return;
+  /*
+   * Initialize MQTT Connection & Message Listener
+   */
+  private initMqttConnection() {
+    const timeStr = this.formatTime();
+    const log = `[${timeStr}] [MQTT] Menghubungkan ke Broker ${this.state.mqttHost}:${this.state.mqttPort}...`;
+    this.state.mqttLogs = [...this.state.mqttLogs, log];
+    this.notify();
 
-    let temp = this.state.temperature;
-    let hum = this.state.humidity;
-    let smoke = this.state.smoke;
-    let flame = this.state.flameDetected;
-    let fan = this.state.exhaustFan;
-    let sprinkler = this.state.sprinkler;
-    let siren = this.state.sirenAlarm;
+    // Setup periodic heart-beat connection timeout check
+    if (this.connectionTimer) clearInterval(this.connectionTimer);
+    this.connectionTimer = window.setInterval(() => {
+      this.checkConnectionTimeout();
+    }, 5000);
+  }
 
-    if (this.state.isEmergencyMode) {
-      temp = Math.min(85, temp + 1.2);
-      hum = Math.max(20, hum - 0.8);
-      smoke = Math.min(95, smoke + 2.5);
-      flame = true;
-      siren = true;
-      fan = true;
-      sprinkler = true;
-    } else {
-      // Normal random fluctuation
-      temp += (Math.random() - 0.48) * 0.4;
-      hum += (Math.random() - 0.5) * 0.8;
-      smoke += (Math.random() - 0.52) * 0.3;
+  /*
+   * Handle incoming real-time telemetry stream from ESP32 via MQTT
+   */
+  public onMqttMessageReceived(data: { temperature: number; humidity: number; smoke: number; flameDetected: boolean }) {
+    const now = new Date();
+    const timeStr = this.formatTime(now);
 
-      // Bound ranges
-      temp = Math.max(18, Math.min(65, temp));
-      hum = Math.max(30, Math.min(95, hum));
-      smoke = Math.max(5, Math.min(80, smoke));
-
-      // Auto safety triggers
-      if (temp >= this.state.tempThreshold || smoke >= this.state.smokeThreshold) {
-        fan = true;
-      }
-    }
-
-    // Determine status
     let status: SystemStatus = 'Aman';
-    if (flame || this.state.isEmergencyMode) {
+    if (data.flameDetected || this.state.isEmergencyMode) {
       status = 'Bahaya';
-    } else if (temp >= this.state.tempThreshold || smoke >= this.state.smokeThreshold) {
+    } else if (data.temperature >= this.state.tempThreshold || data.smoke >= this.state.smokeThreshold) {
       status = 'Peringatan';
     }
 
-    const nowStr = this.formatTime();
+    const newTempHistory = [...this.state.tempHistory.slice(-14), Number(data.temperature.toFixed(1))];
+    const newHumHistory = [...this.state.humHistory.slice(-14), Number(data.humidity.toFixed(0))];
+    const newTimeHistory = [...this.state.timeHistory.slice(-14), timeStr];
 
-    // Update history
-    const newTempHistory = [...this.state.tempHistory.slice(-14), Number(temp.toFixed(1))];
-    const newHumHistory = [...this.state.humHistory.slice(-14), Number(hum.toFixed(0))];
-    const newTimeHistory = [...this.state.timeHistory.slice(-14), nowStr];
-
-    // MQTT telemetry log periodically
     const newMqttLogs = [...this.state.mqttLogs];
-    if (Math.random() > 0.7 || status !== this.state.systemStatus) {
-      newMqttLogs.push(
-        `[${nowStr}] [PUBLISH] warehouse/sensors/telemetry -> Temp:${temp.toFixed(1)}°C Hum:${hum.toFixed(0)}% Smoke:${smoke.toFixed(0)}% Status:${status}`
-      );
-      if (newMqttLogs.length > 50) newMqttLogs.shift();
-    }
+    newMqttLogs.push(
+      `[${timeStr}] [STREAM] Temp:${data.temperature.toFixed(1)}°C Hum:${data.humidity.toFixed(0)}% Smoke:${data.smoke.toFixed(0)}% Flame:${data.flameDetected ? 'YES' : 'NO'}`
+    );
+    if (newMqttLogs.length > 50) newMqttLogs.shift();
 
     this.state = {
       ...this.state,
-      temperature: temp,
-      humidity: hum,
-      smoke: smoke,
-      flameDetected: flame,
+      isDeviceConnected: true,
+      temperature: data.temperature,
+      humidity: data.humidity,
+      smoke: data.smoke,
+      flameDetected: data.flameDetected,
       systemStatus: status,
-      exhaustFan: fan,
-      sprinkler: sprinkler,
-      sirenAlarm: siren,
+      nanoStatus: 'Active (UART Sync OK)',
       tempHistory: newTempHistory,
       humHistory: newHumHistory,
       timeHistory: newTimeHistory,
       mqttLogs: newMqttLogs,
     };
 
-    // Add log record every 5 ticks or when status changes
-    if (this.logCounter++ % 5 === 0 || status !== this.state.systemStatus) {
-      this.addLogRecord(temp, hum, smoke, flame, status);
-    } else {
-      this.notify();
+    this.notify();
+  }
+
+  /*
+   * If ESP32 is turned off or disconnected, reset metrics to 0 and set status to Offline
+   */
+  private checkConnectionTimeout() {
+    // If no stream data has arrived or device is marked offline
+    if (!this.state.isDeviceConnected) {
+      if (this.state.systemStatus !== 'Offline') {
+        const timeStr = this.formatTime();
+        const logs = [
+          ...this.state.mqttLogs,
+          `[${timeStr}] [OFFLINE] ⚠️ Perangkat ESP32 terputus / mati! Mengembalikan statistik dashboard ke nol.`,
+        ];
+
+        this.state = {
+          ...this.state,
+          isDeviceConnected: false,
+          temperature: 0,
+          humidity: 0,
+          smoke: 0,
+          flameDetected: false,
+          systemStatus: 'Offline',
+          nanoStatus: 'Disconnected (No Stream)',
+          exhaustFan: false,
+          sprinkler: false,
+          sirenAlarm: false,
+          mqttLogs: logs,
+        };
+        this.notify();
+      }
     }
   }
 
-  private addLogRecord(temp: number, hum: number, smoke: number, flame: boolean, status: SystemStatus) {
+  /*
+   * Simulates an incoming test MQTT packet from ESP32 (for testing real stream)
+   */
+  public simulateIncomingEspStream(temp: number, hum: number, smoke: number, flame: boolean) {
+    this.onMqttMessageReceived({ temperature: temp, humidity: hum, smoke, flameDetected: flame });
+  }
+
+  /*
+   * Schedule Checker: Runs every minute to auto-save history at specified time (Default: 03:00 AM)
+   */
+  private startScheduleChecker() {
+    if (this.scheduleCheckTimer) clearInterval(this.scheduleCheckTimer);
+    this.scheduleCheckTimer = window.setInterval(() => {
+      const now = new Date();
+      const currentHHMM = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      const todayKey = this.formatDateKey(now);
+
+      if (currentHHMM === this.state.scheduledSaveTime && this.lastSavedDate !== todayKey) {
+        this.lastSavedDate = todayKey;
+        this.saveScheduledHistory();
+      }
+    }, 20000);
+  }
+
+  /*
+   * Save History Record on Schedule (e.g. 03:00 AM)
+   */
+  private saveScheduledHistory() {
+    const timeStr = this.formatTime();
     const record: LogRecord = {
-      id: Date.now().toString() + Math.random().toString(36).substring(2, 5),
-      timeFormatted: `${this.formatTime()} WIB`,
-      temperature: Number(temp.toFixed(1)),
-      humidity: Number(hum.toFixed(0)),
-      smoke: Number(smoke.toFixed(0)),
-      flameDetected: flame,
-      status: status,
+      id: Date.now().toString(),
+      timeFormatted: `${timeStr} WIB (Auto-Schedule)`,
+      temperature: this.state.temperature,
+      humidity: this.state.humidity,
+      smoke: this.state.smoke,
+      flameDetected: this.state.flameDetected,
+      status: this.state.systemStatus,
     };
 
-    const newRecords = [record, ...this.state.logRecords.slice(0, 49)];
+    this.addLogRecordAndSyncDb(record, `[SCHEDULED AUTO-SAVE ${this.state.scheduledSaveTime}]`);
+  }
+
+  /*
+   * Save History Record Manually on User Command
+   */
+  public saveManualHistory() {
+    const timeStr = this.formatTime();
+    const record: LogRecord = {
+      id: Date.now().toString(),
+      timeFormatted: `${timeStr} WIB (Manual Save)`,
+      temperature: this.state.temperature,
+      humidity: this.state.humidity,
+      smoke: this.state.smoke,
+      flameDetected: this.state.flameDetected,
+      status: this.state.systemStatus,
+    };
+
+    this.addLogRecordAndSyncDb(record, '[MANUAL SAVE]');
+  }
+
+  /*
+   * Add Record to Local State and Post to MySQL Database / REST API
+   */
+  private addLogRecordAndSyncDb(record: LogRecord, sourceLabel: string) {
+    const timeStr = this.formatTime();
+    const newRecords = [record, ...this.state.logRecords.slice(0, 99)];
+    const logs = [
+      ...this.state.mqttLogs,
+      `[${timeStr}] ${sourceLabel} Menyimpan rekaman histori (Temp:${record.temperature}°C, Status:${record.status}) ke Database MySQL ${this.state.mysqlDbHost}:${this.state.mysqlDbPort}/${this.state.mysqlDbName}...`,
+    ];
+
     this.state = {
       ...this.state,
       logRecords: newRecords,
+      mqttLogs: logs,
     };
     this.notify();
+
+    // Async call to MySQL / REST API
+    this.syncRecordToMysqlDatabase(record);
   }
 
-  // Action methods
-  public togglePause() {
-    this.state = { ...this.state, isPaused: !this.state.isPaused };
-    this.notify();
+  /*
+   * Backend Sync Function: Send LogRecord to MySQL Database via REST API
+   */
+  private async syncRecordToMysqlDatabase(record: LogRecord) {
+    try {
+      if (this.state.mysqlApiEndpoint && this.state.mysqlApiEndpoint.startsWith('http')) {
+        await fetch(this.state.mysqlApiEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            timestamp: record.timeFormatted,
+            temperature: record.temperature,
+            humidity: record.humidity,
+            smoke: record.smoke,
+            flame_detected: record.flameDetected,
+            status: record.status,
+            db_host: this.state.mysqlDbHost,
+            db_name: this.state.mysqlDbName,
+          }),
+        });
+      }
+    } catch (err) {
+      console.warn('MySQL API sync error:', err);
+    }
   }
 
+  // Actuator Actions
   public setExhaust(value: boolean) {
     const timeStr = this.formatTime();
     const newLogs = [
@@ -222,7 +347,7 @@ class WarehouseService {
     const timeStr = this.formatTime();
     const newLogs = [
       ...this.state.mqttLogs,
-      `[${timeStr}] [EMERGENCY] 🔥 SIMULASI ALARM KEBAKARAN DITRIGGER!`,
+      `[${timeStr}] [EMERGENCY] 🔥 ALARM KEBAKARAN DITRIGGER!`,
       `[${timeStr}] [PUBLISH] warehouse/emergency -> SIRINE & SPRINKLER DIAKTIFKAN`,
     ];
     this.state = {
@@ -235,7 +360,7 @@ class WarehouseService {
       systemStatus: 'Bahaya',
       mqttLogs: newLogs,
     };
-    this.addLogRecord(this.state.temperature, this.state.humidity, this.state.smoke, true, 'Bahaya');
+    this.notify();
   }
 
   public resetEmergency() {
@@ -251,13 +376,10 @@ class WarehouseService {
       sirenAlarm: false,
       exhaustFan: false,
       sprinkler: false,
-      temperature: 28.5,
-      humidity: 62.0,
-      smoke: 12.0,
-      systemStatus: 'Aman',
+      systemStatus: this.state.isDeviceConnected ? 'Aman' : 'Offline',
       mqttLogs: newLogs,
     };
-    this.addLogRecord(28.5, 62.0, 12.0, false, 'Aman');
+    this.notify();
   }
 
   public clearMqttLogs() {
@@ -270,20 +392,39 @@ class WarehouseService {
     this.notify();
   }
 
-  public updateSettings(tempThreshold: number, smokeThreshold: number, wifiSsid: string, wifiPass: string) {
+  /*
+   * Save updated Configuration Settings (MQTT, MySQL, Schedule, Thresholds)
+   */
+  public updateSettings(config: {
+    tempThreshold: number;
+    smokeThreshold: number;
+    wifiSsid: string;
+    wifiPass: string;
+    mqttHost: string;
+    mqttPort: number;
+    mqttTopic: string;
+    mqttUser: string;
+    mqttPass: string;
+    mysqlApiEndpoint: string;
+    mysqlDbHost: string;
+    mysqlDbPort: number;
+    mysqlDbName: string;
+    mysqlDbUser: string;
+    mysqlDbPass: string;
+    scheduledSaveTime: string;
+  }) {
     const timeStr = this.formatTime();
     const newLogs = [
       ...this.state.mqttLogs,
-      `[${timeStr}] [CONFIG] Wi-Fi SSID updated to '${wifiSsid}', Temp limit: ${tempThreshold}°C, Smoke limit: ${smokeThreshold}%`,
+      `[${timeStr}] [CONFIG] Disimpan: MQTT Broker (${config.mqttHost}:${config.mqttPort}), MySQL (${config.mysqlDbHost}/${config.mysqlDbName}), Auto-Save History (${config.scheduledSaveTime})`,
     ];
+
     this.state = {
       ...this.state,
-      tempThreshold,
-      smokeThreshold,
-      wifiSsid,
-      wifiPass,
+      ...config,
       mqttLogs: newLogs,
     };
+
     this.notify();
   }
 
@@ -295,7 +436,5 @@ class WarehouseService {
     return csv;
   }
 }
-
-type DateTimeFormatInput = string | number | Date;
 
 export const warehouseService = WarehouseService.getInstance();

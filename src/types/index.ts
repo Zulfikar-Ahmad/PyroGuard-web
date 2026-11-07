@@ -1,4 +1,4 @@
-export type SystemStatus = 'Aman' | 'Peringatan' | 'Bahaya';
+export type SystemStatus = 'Aman' | 'Peringatan' | 'Bahaya' | 'Offline';
 
 export interface LogRecord {
   id: string;
@@ -11,6 +11,7 @@ export interface LogRecord {
 }
 
 export interface TelemetryState {
+  isDeviceConnected: boolean;
   temperature: number;
   humidity: number;
   smoke: number;
@@ -20,8 +21,26 @@ export interface TelemetryState {
   smokeThreshold: number;
   wifiSsid: string;
   wifiPass: string;
-  espIpAddress: string;
+
+  // MQTT Config
+  mqttHost: string;
   mqttPort: number;
+  mqttTopic: string;
+  mqttUser: string;
+  mqttPass: string;
+
+  // MySQL / Database Config
+  mysqlApiEndpoint: string;
+  mysqlDbHost: string;
+  mysqlDbPort: number;
+  mysqlDbName: string;
+  mysqlDbUser: string;
+  mysqlDbPass: string;
+
+  // Schedule Config
+  scheduledSaveTime: string;
+
+  espIpAddress: string;
   nanoStatus: string;
   exhaustFan: boolean;
   sprinkler: boolean;
