@@ -11,6 +11,26 @@ class WarehouseService {
   private scheduleCheckTimer: number | null = null;
   private lastSavedDate: string = '';
 
+  /*
+   * ============================================================================
+   * CONFIGURATION KEYS FOR MQTT BROKER & MYSQL DATABASE / REST API
+   * ============================================================================
+   * 1. MQTT Broker Details (Cloudflare Tunnel to Docker VM):
+   *    - Domain/Host: mqttHost (default: "mqtt.pyroguard.app")
+   *    - Port: mqttPort (default: 443 WSS)
+   *    - Username: mqttUser (default: "pyroadmin")
+   *    - Password: mqttPass (default: "pyroguard371")
+   *    - Topic: mqttTopic (default: "warehouse/sensors/telemetry")
+   *
+   * 2. MySQL / Backend API Details:
+   *    - API Endpoint: mysqlApiEndpoint (default: "https://api.pyroguard.app/history")
+   *    - Database Host: mysqlDbHost (default: "127.0.0.1")
+   *    - Database Name: mysqlDbName (default: "warehouse_iot")
+   *    - Database User: mysqlDbUser (default: "pyroadmin")
+   *    - Database Pass: mysqlDbPass (default: "pyroguard371")
+   * ============================================================================
+   */
+
   private state: TelemetryState = {
     isDeviceConnected: false,
     temperature: 0,
@@ -29,7 +49,7 @@ class WarehouseService {
     mqttPass: 'pyroguard371',
 
     // MySQL / REST API Configuration
-    mysqlApiEndpoint: 'https://api.pyroguard.app/api/history',
+    mysqlApiEndpoint: 'https://api.pyroguard.app/history',
     mysqlDbHost: '127.0.0.1',
     mysqlDbPort: 3306,
     mysqlDbName: 'warehouse_iot',
@@ -314,86 +334,112 @@ class WarehouseService {
   }
 
   /*
-   * Fetch History from MySQL Database REST API on startup
+   * Fetch History from MySQL Database REST API on startup (Tries primary URL and alternate URL if 404)
    */
   public async fetchHistoryFromApi() {
-    try {
-      if (this.state.mysqlApiEndpoint && this.state.mysqlApiEndpoint.startsWith('http')) {
-        const res = await fetch(this.state.mysqlApiEndpoint, { method: 'GET' });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            const fetchedRecords: LogRecord[] = data.map((item: {
-              id?: string | number;
-              timestamp?: string;
-              timeFormatted?: string;
-              temperature: number;
-              humidity: number;
-              smoke: number;
-              flame_detected?: boolean | number;
-              flameDetected?: boolean;
-              status: SystemStatus;
-            }) => ({
-              id: String(item.id || Math.random()),
-              timeFormatted: item.timeFormatted || item.timestamp || this.formatTime(),
-              temperature: Number(item.temperature),
-              humidity: Number(item.humidity),
-              smoke: Number(item.smoke),
-              flameDetected: Boolean(item.flame_detected ?? item.flameDetected ?? false),
-              status: item.status || 'Aman',
-            }));
+    const endpoints = [
+      this.state.mysqlApiEndpoint,
+      this.state.mysqlApiEndpoint.endsWith('/history') && !this.state.mysqlApiEndpoint.endsWith('/api/history')
+        ? this.state.mysqlApiEndpoint.replace('/history', '/api/history')
+        : this.state.mysqlApiEndpoint.replace('/api/history', '/history'),
+    ];
 
-            this.state.logRecords = fetchedRecords;
-            const logMsg = `[${this.formatTime()}] [MYSQL GET] Berhasil memuat ${fetchedRecords.length} data histori dari database MariaDB.`;
-            this.state.mqttLogs = [...this.state.mqttLogs, logMsg];
-            this.notify();
+    for (const url of endpoints) {
+      try {
+        if (url && url.startsWith('http')) {
+          const res = await fetch(url, { method: 'GET' });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              const fetchedRecords: LogRecord[] = data.map((item: {
+                id?: string | number;
+                timestamp?: string;
+                timeFormatted?: string;
+                temperature: number;
+                humidity: number;
+                smoke: number;
+                flame_detected?: boolean | number;
+                flameDetected?: boolean;
+                status: SystemStatus;
+              }) => ({
+                id: String(item.id || Math.random()),
+                timeFormatted: item.timeFormatted || item.timestamp || this.formatTime(),
+                temperature: Number(item.temperature),
+                humidity: Number(item.humidity),
+                smoke: Number(item.smoke),
+                flameDetected: Boolean(item.flame_detected ?? item.flameDetected ?? false),
+                status: item.status || 'Aman',
+              }));
+
+              this.state.logRecords = fetchedRecords;
+              const logMsg = `[${this.formatTime()}] [MYSQL GET] Berhasil memuat ${fetchedRecords.length} data histori dari database MariaDB (${url}).`;
+              this.state.mqttLogs = [...this.state.mqttLogs, logMsg];
+              this.notify();
+              return;
+            }
           }
         }
+      } catch (e) {
+        console.warn('Failed to fetch history records from URL:', url, e);
       }
-    } catch (e) {
-      console.warn('Failed to fetch history records from MySQL API:', e);
     }
   }
 
   /*
-   * Backend Sync Function: Send LogRecord to MySQL Database via REST API
+   * Backend Sync Function: Send LogRecord to MySQL Database via REST API (Tries primary and alternate path if 404)
    */
   private async syncRecordToMysqlDatabase(record: LogRecord) {
     const timeStr = this.formatTime();
-    try {
-      if (this.state.mysqlApiEndpoint && this.state.mysqlApiEndpoint.startsWith('http')) {
-        const res = await fetch(this.state.mysqlApiEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            timestamp: record.timeFormatted,
-            temperature: record.temperature,
-            humidity: record.humidity,
-            smoke: record.smoke,
-            flame_detected: record.flameDetected,
-            status: record.status,
-            db_host: this.state.mysqlDbHost,
-            db_name: this.state.mysqlDbName,
-            db_user: this.state.mysqlDbUser,
-            db_pass: this.state.mysqlDbPass,
-          }),
-        });
+    const endpoints = [
+      this.state.mysqlApiEndpoint,
+      this.state.mysqlApiEndpoint.endsWith('/history') && !this.state.mysqlApiEndpoint.endsWith('/api/history')
+        ? this.state.mysqlApiEndpoint.replace('/history', '/api/history')
+        : this.state.mysqlApiEndpoint.replace('/api/history', '/history'),
+    ];
 
-        if (res.ok) {
-          const okLog = `[${timeStr}] [MYSQL OK] Data histori berhasil tersimpan ke tabel MariaDB!`;
-          this.state.mqttLogs = [...this.state.mqttLogs, okLog];
-        } else {
-          const errText = await res.text();
-          const errLog = `[${timeStr}] [MYSQL HTTP ERROR ${res.status}] Gagal menyimpan ke Database: ${errText}`;
-          this.state.mqttLogs = [...this.state.mqttLogs, errLog];
+    let lastError = '';
+
+    for (const url of endpoints) {
+      try {
+        if (url && url.startsWith('http')) {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              timestamp: record.timeFormatted,
+              temperature: record.temperature,
+              humidity: record.humidity,
+              smoke: record.smoke,
+              flame_detected: record.flameDetected,
+              status: record.status,
+              db_host: this.state.mysqlDbHost,
+              db_name: this.state.mysqlDbName,
+              db_user: this.state.mysqlDbUser,
+              db_pass: this.state.mysqlDbPass,
+            }),
+          });
+
+          if (res.ok) {
+            const okLog = `[${timeStr}] [MYSQL OK] Data histori berhasil tersimpan ke MariaDB via ${url}!`;
+            this.state.mqttLogs = [...this.state.mqttLogs, okLog];
+            this.notify();
+            return;
+          } else if (res.status === 404) {
+            lastError = `404 Not Found di ${url}`;
+            continue; // Try next URL fallback
+          } else {
+            const errText = await res.text();
+            lastError = `HTTP ${res.status}: ${errText}`;
+          }
         }
-        this.notify();
+      } catch (err) {
+        lastError = String(err);
       }
-    } catch (err) {
-      const errLog = `[${timeStr}] [MYSQL SYNC FAILED] Gagal menghubungi API Endpoint (${this.state.mysqlApiEndpoint}): ${err}`;
-      this.state.mqttLogs = [...this.state.mqttLogs, errLog];
-      this.notify();
     }
+
+    const errLog = `[${timeStr}] [MYSQL SYNC FAILED] ${lastError}`;
+    this.state.mqttLogs = [...this.state.mqttLogs, errLog];
+    this.notify();
   }
 
   // Actuator Actions
