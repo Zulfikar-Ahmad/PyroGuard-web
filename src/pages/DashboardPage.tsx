@@ -54,7 +54,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
 
   const handleTabChange = (idx: number) => {
     if (idx === 1 && !isAdmin) {
-      setAccessDeniedMsg('Tab Kontrol Perangkat hanya dapat diakses oleh Administrator!');
+      setAccessDeniedMsg('Fitur Kontrol Perangkat hanya tersedia melalui Aplikasi Mobile (App Only)!');
       setTimeout(() => setAccessDeniedMsg(''), 3500);
       return;
     }
@@ -70,7 +70,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors relative">
-      {/* Access Denied Toast for User Role trying to access Control */}
+      {/* Access Denied Toast */}
       {accessDeniedMsg && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-amber-500 text-slate-950 font-bold text-xs shadow-2xl flex items-center gap-2 animate-bounce">
           <Lock className="w-4 h-4" />
@@ -156,14 +156,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-sky-400 text-white flex items-center justify-center font-extrabold text-xs shadow-sm">
                 {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
               </div>
-              <div className="hidden xl:block text-left">
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate max-w-[100px]">
-                  {currentUser?.name || 'User'}
-                </span>
-                <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase block leading-none mt-0.5">
-                  {isAdmin ? '🛡️ Admin' : '👤 User'}
-                </span>
-              </div>
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 hidden xl:inline">
+                {currentUser?.name || 'User'}
+              </span>
             </div>
 
             {/* Logout Button */}
@@ -186,9 +181,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
             <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
               <Lock className="w-6 h-6" />
             </div>
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Akses Terbatas</h3>
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Akses Eksklusif Aplikasi Mobile</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Menu Kontrol Perangkat hanya dapat diakses oleh akun dengan hak akses **Administrator**.
+              Menu Kontrol Perangkat hanya dapat diakses melalui **Aplikasi Mobile (App Only)**.
             </p>
           </div>
         ))}

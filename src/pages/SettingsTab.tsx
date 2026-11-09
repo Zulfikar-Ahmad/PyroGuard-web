@@ -93,14 +93,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
 
   return (
     <div className="space-y-8 max-w-5xl">
-      {/* Role Notice for User */}
+      {/* Notice for Web Access */}
       {!isAdmin && (
         <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <Lock className="w-4 h-4 text-blue-500 flex-shrink-0" />
-            <span>Mode Akun Biasa (User): Anda dapat mengubah Tema, Jadwal Histori, dan Threshold Sensor. Konfigurasi MQTT & Database dikunci untuk Administrator.</span>
+            <span>Akses Web: Anda dapat mengubah Tema, Jadwal Histori, dan Threshold Sensor. Konfigurasi MQTT & Database khusus melalui Aplikasi (App Only).</span>
           </div>
-          <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-[10px] font-extrabold uppercase">User Role</span>
+          <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-[10px] font-extrabold uppercase">App Only</span>
         </div>
       )}
 
@@ -211,7 +211,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
             </p>
           </div>
 
-          <div className="p-5 rounded-2xl glass-card grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-5 rounded-2xl glass-card grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                 Jam Terjadwal Auto-Save (HH:mm)
@@ -226,13 +226,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
                 />
               </div>
             </div>
-            <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 pt-4 sm:pt-0">
-              📌 Setiap jam <strong className="text-slate-800 dark:text-slate-200 mx-1">{scheduledSaveTime} WIB</strong>, sistem akan merekam snapshot telemetri dan menyimpannya ke Database MariaDB.
+            <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              📌 Setiap jam <strong className="text-slate-800 dark:text-slate-200 font-bold">{scheduledSaveTime} WIB</strong>, sistem akan merekam snapshot telemetri dan menyimpannya ke Database MariaDB.
             </div>
           </div>
         </div>
 
-        {/* 2. MQTT Broker Configuration (Admin Only) */}
+        {/* 2. MQTT Broker Configuration (App Only) */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -246,7 +246,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
             </div>
             {!isAdmin && (
               <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-500/10 text-slate-500 dark:text-slate-400 text-[11px] font-bold border border-slate-500/20">
-                <Lock className="w-3 h-3" /> Admin Only
+                <Lock className="w-3 h-3" /> App Only
               </span>
             )}
           </div>
@@ -324,7 +324,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           </div>
         </div>
 
-        {/* 3. Database MariaDB Configuration (Admin Only) */}
+        {/* 3. Database MariaDB Configuration (App Only) */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -338,7 +338,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
             </div>
             {!isAdmin && (
               <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-500/10 text-slate-500 dark:text-slate-400 text-[11px] font-bold border border-slate-500/20">
-                <Lock className="w-3 h-3" /> Admin Only
+                <Lock className="w-3 h-3" /> App Only
               </span>
             )}
           </div>
@@ -481,10 +481,16 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           type="submit"
           className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white font-extrabold text-xs tracking-wide uppercase transition shadow-lg shadow-blue-500/25 active:scale-95 flex items-center justify-center gap-2"
         >
-          <Save className="w-4 h-4" />
-          Simpan Seluruh Konfigurasi
+          <SessionSaveButton />
         </button>
       </form>
     </div>
   );
 };
+
+const SessionSaveButton = () => (
+  <>
+    <Save className="w-4 h-4" />
+    Simpan Seluruh Konfigurasi
+  </>
+);
