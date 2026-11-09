@@ -13,14 +13,16 @@ class WarehouseService {
    * ============================================================================
    * CONFIGURATION KEYS FOR MQTT BROKER & MYSQL DATABASE / REST API
    * ============================================================================
-   * 1. MQTT Broker Details: Edit in Settings page or change defaults below:
-   *    - Host: mqttHost (default: "broker.emqx.io" / "192.168.1.105")
-   *    - Port: mqttPort (default: 1883 / 8083)
+   * 1. MQTT Broker Details (Cloudflare Tunnel to Docker VM):
+   *    - Domain/Host: mqttHost (default: "mqtt.pyroguard.app")
+   *    - Port: mqttPort (default: 443 / 8083 WSS)
+   *    - Username: mqttUser (default: "pyroadmin")
+   *    - Password: mqttPass (default: "pyroguard371")
    *    - Topic: mqttTopic (default: "warehouse/sensors/telemetry")
    *
-   * 2. MySQL / Backend API Details: Edit in Settings page or change defaults below:
-   *    - API Endpoint: mysqlApiEndpoint (e.g. "https://api.pyroguard.app/history")
-   *    - Database Host: mysqlDbHost (e.g. "127.0.0.1" / "db.pyroguard.app")
+   * 2. MySQL / Backend API Details:
+   *    - API Endpoint: mysqlApiEndpoint (default: "https://api.pyroguard.app/api/history")
+   *    - Database Host: mysqlDbHost (default: "127.0.0.1")
    *    - Database Name: mysqlDbName (default: "pyroguard_db")
    * ============================================================================
    */
@@ -37,12 +39,12 @@ class WarehouseService {
     wifiSsid: 'PyroGuard_Warehouse_5G',
     wifiPass: 'GudangUtama2024!',
 
-    // MQTT Configuration
-    mqttHost: '192.168.1.105',
-    mqttPort: 1883,
+    // MQTT Configuration (Cloudflare Tunnel to Docker VM)
+    mqttHost: 'mqtt.pyroguard.app',
+    mqttPort: 443,
     mqttTopic: 'warehouse/sensors/telemetry',
-    mqttUser: 'admin',
-    mqttPass: 'pyroguard123',
+    mqttUser: 'pyroadmin',
+    mqttPass: 'pyroguard371',
 
     // MySQL / Database Configuration
     mysqlApiEndpoint: 'https://api.pyroguard.app/api/history',
@@ -55,7 +57,7 @@ class WarehouseService {
     // History Schedule Config (Default: 03:00 AM)
     scheduledSaveTime: '03:00',
 
-    espIpAddress: '192.168.1.105',
+    espIpAddress: 'mqtt.pyroguard.app',
     nanoStatus: 'Standby (Awaiting ESP32)',
     exhaustFan: false,
     sprinkler: false,
@@ -69,6 +71,7 @@ class WarehouseService {
     logRecords: [],
     mqttLogs: [
       `[${this.formatTime(new Date())}] [SYSTEM] Memulai sistem monitoring MQTT & MySQL...`,
+      `[${this.formatTime(new Date())}] [INFO] Menghubungkan ke Broker Cloudflare Tunnel mqtt.pyroguard.app:443 (User: pyroadmin)...`,
       `[${this.formatTime(new Date())}] [INFO] Menunggu aliran data stream dari ESP32-S3 (Topic: warehouse/sensors/telemetry)...`,
     ],
   };
@@ -119,7 +122,7 @@ class WarehouseService {
    */
   private initMqttConnection() {
     const timeStr = this.formatTime();
-    const log = `[${timeStr}] [MQTT] Menghubungkan ke Broker ${this.state.mqttHost}:${this.state.mqttPort}...`;
+    const log = `[${timeStr}] [MQTT] Menghubungkan ke Cloudflare Broker Tunnel wss://${this.state.mqttHost}:${this.state.mqttPort} (User: ${this.state.mqttUser})...`;
     this.state.mqttLogs = [...this.state.mqttLogs, log];
     this.notify();
 
