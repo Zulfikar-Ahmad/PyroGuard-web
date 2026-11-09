@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Monitor, Sun, Moon, Palette, Thermometer, CloudRain, Save, Check, Database, Radio, Clock } from 'lucide-react';
+import { Monitor, Sun, Moon, Palette, Thermometer, CloudRain, Save, Check, Database, Radio, Clock, Lock } from 'lucide-react';
 import { TelemetryState } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { warehouseService } from '../services/warehouseService';
+import { authService } from '../services/authService';
 
 interface SettingsTabProps {
   state: TelemetryState;
@@ -10,6 +11,8 @@ interface SettingsTabProps {
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
   const { themeMode, setThemeMode, isDynamicColorAvailable } = useTheme();
+  const currentUser = authService.getCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
 
   // Settings form states
   const [tempThresh, setTempThresh] = useState(state.tempThreshold.toString());
@@ -55,9 +58,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
       return;
     }
 
-    if (!mqttHost.trim() || isNaN(mPort)) {
-      setErrorMsg('Host & Port MQTT Broker harus diisi valid!');
-      return;
+    if (isAdmin) {
+      if (!mqttHost.trim() || isNaN(mPort)) {
+        setErrorMsg('Host & Port MQTT Broker harus diisi valid!');
+        return;
+      }
     }
 
     if (!scheduledSaveTime.trim()) {
@@ -68,17 +73,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
     warehouseService.updateSettings({
       tempThreshold: tempVal,
       smokeThreshold: smokeVal,
-      mqttHost: mqttHost.trim(),
-      mqttPort: mPort,
-      mqttTopic: mqttTopic.trim(),
-      mqttUser: mqttUser.trim(),
-      mqttPass: mqttPass.trim(),
-      mysqlApiEndpoint: mysqlApiEndpoint.trim(),
-      mysqlDbHost: mysqlDbHost.trim(),
-      mysqlDbPort: isNaN(dbPort) ? 3306 : dbPort,
-      mysqlDbName: mysqlDbName.trim(),
-      mysqlDbUser: mysqlDbUser.trim(),
-      mysqlDbPass: mysqlDbPass.trim(),
+      mqttHost: isAdmin ? mqttHost.trim() : state.mqttHost,
+      mqttPort: isAdmin ? mPort : state.mqttPort,
+      mqttTopic: isAdmin ? mqttTopic.trim() : state.mqttTopic,
+      mqttUser: isAdmin ? mqttUser.trim() : state.mqttUser,
+      mqttPass: isAdmin ? mqttPass.trim() : state.mqttPass,
+      mysqlApiEndpoint: isAdmin ? mysqlApiEndpoint.trim() : state.mysqlApiEndpoint,
+      mysqlDbHost: isAdmin ? mysqlDbHost.trim() : state.mysqlDbHost,
+      mysqlDbPort: isAdmin ? (isNaN(dbPort) ? 3306 : dbPort) : state.mysqlDbPort,
+      mysqlDbName: isAdmin ? mysqlDbName.trim() : state.mysqlDbName,
+      mysqlDbUser: isAdmin ? mysqlDbUser.trim() : state.mysqlDbUser,
+      mysqlDbPass: isAdmin ? mysqlDbPass.trim() : state.mysqlDbPass,
       scheduledSaveTime: scheduledSaveTime.trim(),
     });
 
@@ -88,6 +93,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
 
   return (
     <div className="space-y-8 max-w-5xl">
+      {/* Role Notice for User */}
+      {!isAdmin && (
+        <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <Lock className="w-4 h-4 text-blue-500 flex-shrink-0" />
+            <span>Mode Akun Biasa (User): Anda dapat mengubah Tema, Jadwal Histori, dan Threshold Sensor. Konfigurasi MQTT & Database dikunci untuk Administrator.</span>
+          </div>
+          <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-[10px] font-extrabold uppercase">User Role</span>
+        </div>
+      )}
+
       {/* Section Theme & Material You */}
       <div className="space-y-4">
         <div>
@@ -179,11 +195,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
         {savedSuccess && (
           <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2">
             <Check className="w-4 h-4" />
-            Konfigurasi MQTT, MySQL Database, Jadwal History & Ambang Batas berhasil disimpan!
+            Konfigurasi berhasil disimpan!
           </div>
         )}
 
-        {/* 1. Schedule History Auto-Save Configuration */}
+        {/* 1. Schedule History Auto-Save Configuration (Accessible to all) */}
         <div className="space-y-4">
           <div>
             <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
@@ -211,24 +227,31 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
               </div>
             </div>
             <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 pt-4 sm:pt-0">
-              📌 Setiap jam <strong className="text-slate-800 dark:text-slate-200 mx-1">{scheduledSaveTime} WIB</strong>, sistem akan merekam snapshot telemetri dan menyimpannya ke Database MySQL.
+              📌 Setiap jam <strong className="text-slate-800 dark:text-slate-200 mx-1">{scheduledSaveTime} WIB</strong>, sistem akan merekam snapshot telemetri dan menyimpannya ke Database MariaDB.
             </div>
           </div>
         </div>
 
-        {/* 2. MQTT Broker Configuration */}
+        {/* 2. MQTT Broker Configuration (Admin Only) */}
         <div className="space-y-4">
-          <div>
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
-              <Radio className="w-5 h-5 text-emerald-500" />
-              <span>Konfigurasi MQTT Broker (ESP32 Stream)</span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Alamat Domain/Host broker tempat ESP32-S3 mengirimkan aliran stream telemetri real-time.
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                <Radio className="w-5 h-5 text-emerald-500" />
+                <span>Konfigurasi MQTT Broker (ESP32 Stream)</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Alamat Domain/Host broker tempat ESP32-S3 mengirimkan aliran stream telemetri real-time.
+              </p>
+            </div>
+            {!isAdmin && (
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-500/10 text-slate-500 dark:text-slate-400 text-[11px] font-bold border border-slate-500/20">
+                <Lock className="w-3 h-3" /> Admin Only
+              </span>
+            )}
           </div>
 
-          <div className="p-5 rounded-2xl glass-card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className={`p-5 rounded-2xl glass-card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${!isAdmin ? 'opacity-60 pointer-events-none' : ''}`}>
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                 MQTT Broker Host / Domain
@@ -237,6 +260,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
                 type="text"
                 value={mqttHost}
                 onChange={(e) => setMqttHost(e.target.value)}
+                disabled={!isAdmin}
                 placeholder="mqtt.pyroguard.app"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
@@ -250,6 +274,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
                 type="number"
                 value={mqttPort}
                 onChange={(e) => setMqttPort(e.target.value)}
+                disabled={!isAdmin}
                 placeholder="443"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
@@ -263,6 +288,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
                 type="text"
                 value={mqttTopic}
                 onChange={(e) => setMqttTopic(e.target.value)}
+                disabled={!isAdmin}
                 placeholder="warehouse/sensors/telemetry"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
@@ -276,6 +302,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
                 type="text"
                 value={mqttUser}
                 onChange={(e) => setMqttUser(e.target.value)}
+                disabled={!isAdmin}
                 placeholder="pyroadmin"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
@@ -289,6 +316,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
                 type="password"
                 value={mqttPass}
                 onChange={(e) => setMqttPass(e.target.value)}
+                disabled={!isAdmin}
                 placeholder="••••••••"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
@@ -296,53 +324,63 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           </div>
         </div>
 
-        {/* 3. Database MySQL Configuration */}
+        {/* 3. Database MariaDB Configuration (Admin Only) */}
         <div className="space-y-4">
-          <div>
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
-              <Database className="w-5 h-5 text-purple-500" />
-              <span>Konfigurasi Database MySQL & REST API Sync</span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Kredensial database MySQL & REST API Endpoint tempat penyimpanan histori tersimpan.
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                <Database className="w-5 h-5 text-purple-500" />
+                <span>Konfigurasi MariaDB Database & REST API Sync</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Kredensial database MariaDB & REST API Endpoint tempat penyimpanan histori tersimpan.
+              </p>
+            </div>
+            {!isAdmin && (
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-500/10 text-slate-500 dark:text-slate-400 text-[11px] font-bold border border-slate-500/20">
+                <Lock className="w-3 h-3" /> Admin Only
+              </span>
+            )}
           </div>
 
-          <div className="p-5 rounded-2xl glass-card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className={`p-5 rounded-2xl glass-card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${!isAdmin ? 'opacity-60 pointer-events-none' : ''}`}>
             <div className="sm:col-span-2 lg:col-span-3">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                REST API Sync Endpoint URL (MySQL Bridge)
+                REST API Sync Endpoint URL (Database Bridge)
               </label>
               <input
                 type="text"
                 value={mysqlApiEndpoint}
                 onChange={(e) => setMysqlApiEndpoint(e.target.value)}
-                placeholder="https://api.pyroguard.app/api/history"
+                disabled={!isAdmin}
+                placeholder="https://api.pyroguard.app/history"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                MySQL Database Host / IP
+                Database Host / IP
               </label>
               <input
                 type="text"
                 value={mysqlDbHost}
                 onChange={(e) => setMysqlDbHost(e.target.value)}
-                placeholder="127.0.0.1 / db.pyroguard.app"
+                disabled={!isAdmin}
+                placeholder="127.0.0.1"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                MySQL Port
+                Database Port
               </label>
               <input
                 type="number"
                 value={mysqlDbPort}
                 onChange={(e) => setMysqlDbPort(e.target.value)}
+                disabled={!isAdmin}
                 placeholder="3306"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
@@ -356,7 +394,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
                 type="text"
                 value={mysqlDbName}
                 onChange={(e) => setMysqlDbName(e.target.value)}
-                placeholder="pyroguard_db"
+                disabled={!isAdmin}
+                placeholder="warehouse_iot"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
             </div>
@@ -369,7 +408,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
                 type="text"
                 value={mysqlDbUser}
                 onChange={(e) => setMysqlDbUser(e.target.value)}
-                placeholder="pyroguard_user"
+                disabled={!isAdmin}
+                placeholder="pyroadmin"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
             </div>
@@ -382,6 +422,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
                 type="password"
                 value={mysqlDbPass}
                 onChange={(e) => setMysqlDbPass(e.target.value)}
+                disabled={!isAdmin}
                 placeholder="••••••••"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
@@ -389,7 +430,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           </div>
         </div>
 
-        {/* 4. Threshold Configuration */}
+        {/* 4. Threshold Configuration (Accessible to all) */}
         <div className="space-y-4">
           <div>
             <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">

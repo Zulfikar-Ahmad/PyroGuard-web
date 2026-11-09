@@ -10,6 +10,13 @@ export interface LogRecord {
   status: SystemStatus;
 }
 
+export interface User {
+  id: string | number;
+  name: string;
+  email: string;
+  role: 'admin' | 'user';
+}
+
 export interface TelemetryState {
   isDeviceConnected: boolean;
   temperature: number;

@@ -1,29 +1,30 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
-import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { AuthModal } from './components/AuthModal';
+import { authService } from './services/authService';
+import { User } from './types';
 
 export const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('pyroguard_auth') === 'true';
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(() => authService.getCurrentUser());
 
-  const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
-    localStorage.setItem('pyroguard_auth', 'true');
-  };
+  useEffect(() => {
+    const unsubscribe = authService.subscribe((user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem('pyroguard_auth');
+    authService.logout();
   };
 
   return (
     <ThemeProvider>
-      {isAuthenticated ? (
+      {currentUser ? (
         <DashboardPage onLogout={handleLogout} />
       ) : (
-        <LoginPage onLoginSuccess={handleLoginSuccess} />
+        <AuthModal isOpen={true} onSuccess={() => {}} />
       )}
     </ThemeProvider>
   );
