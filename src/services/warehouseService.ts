@@ -549,34 +549,17 @@ class WarehouseService {
     this.notify();
   }
 
-  public async clearHistory() {
+  public clearHistory() {
     this.state = { ...this.state, logRecords: [] };
     this.notify();
+  }
 
-    const timeStr = this.formatTime();
-    const cleanBase = this.state.mysqlApiEndpoint.replace(/\/api\/history|\/history|\/$/, '');
-    const endpoints = [
-      `${cleanBase}/api/history`,
-      `${cleanBase}/history`,
-      this.state.mysqlApiEndpoint,
-    ];
-    const uniqueEndpoints = Array.from(new Set(endpoints));
-
-    for (const url of uniqueEndpoints) {
-      try {
-        if (url && url.startsWith('http')) {
-          const res = await fetch(url, { method: 'DELETE', mode: 'cors' });
-          if (res.ok) {
-            const okLog = `[${timeStr}] [MYSQL DELETE OK] Seluruh histori berhasil dihapus dari database MariaDB via ${url}!`;
-            this.state.mqttLogs = [...this.state.mqttLogs, okLog];
-            this.notify();
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn('Failed to delete history from API:', url, err);
-      }
-    }
+  public exportCsvData(): string {
+    let csv = 'Waktu,Suhu (C),Kelembapan (%),Asap (%),Flame,Status\n';
+    this.state.logRecords.forEach((rec) => {
+      csv += `${rec.timeFormatted},${rec.temperature},${rec.humidity},${rec.smoke},${rec.flameDetected ? 'YA' : 'TIDAK'},${rec.status}\n`;
+    });
+    return csv;
   }
 
   /*
@@ -594,9 +577,26 @@ class WarehouseService {
     mysqlDbHost: string;
     mysqlDbPort: number;
     mysqlDbName: string;
-    mysqlDbSize: string;
+    mysqlDbUser: string;
+    mysqlDbPass: string;
+    scheduledSaveTime: string;
   }) {
-    this.updateSettings(config);
+    const timeStr = this.formatTime();
+    const newLogs = [
+      ...this.state.mqttLogs,
+      `[${timeStr}] [CONFIG] Disimpan: MQTT Broker (${config.mqttHost}:${config.mqttPort}), MySQL (${config.mysqlDbHost}/${config.mysqlDbName}), Auto-Save History (${config.scheduledSaveTime})`,
+    ];
+
+    this.state = {
+      ...this.state,
+      ...config,
+      mqttLogs: newLogs,
+    };
+
+    // Re-initialize MQTT connection if host/port/credentials changed
+    this.initMqttConnection();
+    this.fetchHistoryFromApi();
+    this.notify();
   }
 }
 
