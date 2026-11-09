@@ -59,7 +59,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
     }
 
     setLoading(true);
-    const res = await authService.register(name.trim(), email.trim(), password, 'user');
+    const res = await authService.register(name.trim(), email.trim(), password);
     setLoading(false);
 
     if (res.success) {
