@@ -120,6 +120,19 @@ class WarehouseService {
   }
 
   /*
+   * Format standard SQL DATETIME string: YYYY-MM-DD HH:mm:ss for MariaDB
+   */
+  private formatSqlTimestamp(date: Date = new Date()): string {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hour = date.getHours().toString().padStart(2, '0');
+    const minute = date.getMinutes().toString().padStart(2, '0');
+    const second = date.getSeconds().toString().padStart(2, '0');
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+  }
+
+  /*
    * Connect Real MQTT WebSocket Client to wss://mqtt.pyroguard.app:443
    */
   private initMqttConnection() {
@@ -398,6 +411,7 @@ class WarehouseService {
       this.state.mysqlApiEndpoint,
     ];
     const uniqueEndpoints = Array.from(new Set(endpoints));
+    const sqlTimestamp = this.formatSqlTimestamp(new Date());
 
     let lastError = '';
 
@@ -409,7 +423,7 @@ class WarehouseService {
             mode: 'cors',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              timestamp: record.timeFormatted,
+              timestamp: sqlTimestamp,
               temperature: record.temperature,
               humidity: record.humidity,
               smoke: record.smoke,
@@ -425,7 +439,7 @@ class WarehouseService {
           if (res.ok) {
             const okLog = `[${timeStr}] [MYSQL OK] Data histori berhasil tersimpan ke MariaDB via ${url}!`;
             this.state.mqttLogs = [...this.state.mqttLogs, okLog];
-            this.notify();
+            this.fetchHistoryFromApi(); // Refresh list from DB
             return;
           } else if (res.status === 404) {
             lastError = `HTTP 404 Not Found at ${url}`;
