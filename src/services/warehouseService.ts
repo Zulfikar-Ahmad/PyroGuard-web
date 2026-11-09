@@ -347,7 +347,7 @@ class WarehouseService {
     for (const url of endpoints) {
       try {
         if (url && url.startsWith('http')) {
-          const res = await fetch(url, { method: 'GET' });
+          const res = await fetch(url, { method: 'GET', mode: 'cors' });
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data)) {
@@ -404,6 +404,7 @@ class WarehouseService {
         if (url && url.startsWith('http')) {
           const res = await fetch(url, {
             method: 'POST',
+            mode: 'cors',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               timestamp: record.timeFormatted,
@@ -425,7 +426,7 @@ class WarehouseService {
             this.notify();
             return;
           } else if (res.status === 404) {
-            lastError = `404 Not Found di ${url}`;
+            lastError = `HTTP 404 Not Found di ${url}`;
             continue; // Try next URL fallback
           } else {
             const errText = await res.text();
@@ -433,11 +434,11 @@ class WarehouseService {
           }
         }
       } catch (err) {
-        lastError = String(err);
+        lastError = `Connection Error: ${err}`;
       }
     }
 
-    const errLog = `[${timeStr}] [MYSQL SYNC FAILED] ${lastError}`;
+    const errLog = `[${timeStr}] [MYSQL SYNC FAILED] Gagal mengirim ke API Endpoint (${this.state.mysqlApiEndpoint}). Detail: ${lastError}`;
     this.state.mqttLogs = [...this.state.mqttLogs, errLog];
     this.notify();
   }
