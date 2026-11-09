@@ -26,6 +26,8 @@ class WarehouseService {
    *    - API Endpoint: mysqlApiEndpoint (default: "https://api.pyroguard.app/api/history")
    *    - Database Host: mysqlDbHost (default: "127.0.0.1")
    *    - Database Name: mysqlDbName (default: "warehouse_iot")
+   *    - Database User: mysqlDbUser (default: "pyroadmin")
+   *    - Database Pass: mysqlDbPass (default: "pyroguard371")
    * ============================================================================
    */
 
@@ -51,8 +53,8 @@ class WarehouseService {
     mysqlDbHost: '127.0.0.1',
     mysqlDbPort: 3306,
     mysqlDbName: 'warehouse_iot',
-    mysqlDbUser: 'pyroguard_user',
-    mysqlDbPass: 'pyroguard_pass',
+    mysqlDbUser: 'pyroadmin',
+    mysqlDbPass: 'pyroguard371',
 
     // History Schedule Config (Default: 03:00 AM)
     scheduledSaveTime: '03:00',
@@ -348,6 +350,8 @@ class WarehouseService {
             status: record.status,
             db_host: this.state.mysqlDbHost,
             db_name: this.state.mysqlDbName,
+            db_user: this.state.mysqlDbUser,
+            db_pass: this.state.mysqlDbPass,
           }),
         });
       }
