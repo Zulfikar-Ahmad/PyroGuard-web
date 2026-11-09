@@ -23,7 +23,7 @@ class WarehouseService {
    *    - Topic: mqttTopic (default: "warehouse/sensors/telemetry")
    *
    * 2. MySQL / Backend API Details:
-   *    - API Endpoint: mysqlApiEndpoint (default: "https://api.pyroguard.app/history")
+   *    - API Endpoint: mysqlApiEndpoint (default: "https://api.pyroguard.app/api/history")
    *    - Database Host: mysqlDbHost (default: "127.0.0.1")
    *    - Database Name: mysqlDbName (default: "warehouse_iot")
    *    - Database User: mysqlDbUser (default: "pyroadmin")
@@ -49,7 +49,7 @@ class WarehouseService {
     mqttPass: 'pyroguard371',
 
     // MySQL / REST API Configuration
-    mysqlApiEndpoint: 'https://api.pyroguard.app/history',
+    mysqlApiEndpoint: 'https://api.pyroguard.app/api/history',
     mysqlDbHost: '127.0.0.1',
     mysqlDbPort: 3306,
     mysqlDbName: 'warehouse_iot',
@@ -334,17 +334,18 @@ class WarehouseService {
   }
 
   /*
-   * Fetch History from MySQL Database REST API on startup (Tries primary URL and alternate URL if 404)
+   * Fetch History from MySQL Database REST API on startup (Tries /api/history and /history candidates)
    */
   public async fetchHistoryFromApi() {
+    const cleanBase = this.state.mysqlApiEndpoint.replace(/\/api\/history|\/history|\/$/, '');
     const endpoints = [
+      `${cleanBase}/api/history`,
+      `${cleanBase}/history`,
       this.state.mysqlApiEndpoint,
-      this.state.mysqlApiEndpoint.endsWith('/history') && !this.state.mysqlApiEndpoint.endsWith('/api/history')
-        ? this.state.mysqlApiEndpoint.replace('/history', '/api/history')
-        : this.state.mysqlApiEndpoint.replace('/api/history', '/history'),
     ];
+    const uniqueEndpoints = Array.from(new Set(endpoints));
 
-    for (const url of endpoints) {
+    for (const url of uniqueEndpoints) {
       try {
         if (url && url.startsWith('http')) {
           const res = await fetch(url, { method: 'GET', mode: 'cors' });
@@ -372,7 +373,7 @@ class WarehouseService {
               }));
 
               this.state.logRecords = fetchedRecords;
-              const logMsg = `[${this.formatTime()}] [MYSQL GET] Berhasil memuat ${fetchedRecords.length} data histori dari database MariaDB (${url}).`;
+              const logMsg = `[${this.formatTime()}] [MYSQL GET OK] Berhasil memuat ${fetchedRecords.length} data histori dari database MariaDB (${url}).`;
               this.state.mqttLogs = [...this.state.mqttLogs, logMsg];
               this.notify();
               return;
@@ -386,20 +387,21 @@ class WarehouseService {
   }
 
   /*
-   * Backend Sync Function: Send LogRecord to MySQL Database via REST API (Tries primary and alternate path if 404)
+   * Backend Sync Function: Send LogRecord to MySQL Database via REST API (Tries /api/history and /history candidates)
    */
   private async syncRecordToMysqlDatabase(record: LogRecord) {
     const timeStr = this.formatTime();
+    const cleanBase = this.state.mysqlApiEndpoint.replace(/\/api\/history|\/history|\/$/, '');
     const endpoints = [
+      `${cleanBase}/api/history`,
+      `${cleanBase}/history`,
       this.state.mysqlApiEndpoint,
-      this.state.mysqlApiEndpoint.endsWith('/history') && !this.state.mysqlApiEndpoint.endsWith('/api/history')
-        ? this.state.mysqlApiEndpoint.replace('/history', '/api/history')
-        : this.state.mysqlApiEndpoint.replace('/api/history', '/history'),
     ];
+    const uniqueEndpoints = Array.from(new Set(endpoints));
 
     let lastError = '';
 
-    for (const url of endpoints) {
+    for (const url of uniqueEndpoints) {
       try {
         if (url && url.startsWith('http')) {
           const res = await fetch(url, {
@@ -426,8 +428,8 @@ class WarehouseService {
             this.notify();
             return;
           } else if (res.status === 404) {
-            lastError = `HTTP 404 Not Found di ${url}`;
-            continue; // Try next URL fallback
+            lastError = `HTTP 404 Not Found at ${url}`;
+            continue; // Try next candidate URL
           } else {
             const errText = await res.text();
             lastError = `HTTP ${res.status}: ${errText}`;
@@ -438,7 +440,7 @@ class WarehouseService {
       }
     }
 
-    const errLog = `[${timeStr}] [MYSQL SYNC FAILED] Gagal mengirim ke API Endpoint (${this.state.mysqlApiEndpoint}). Detail: ${lastError}`;
+    const errLog = `[${timeStr}] [MYSQL SYNC FAILED] Gagal mengirim ke API Endpoint. Detail: ${lastError}`;
     this.state.mqttLogs = [...this.state.mqttLogs, errLog];
     this.notify();
   }
