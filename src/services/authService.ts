@@ -24,7 +24,10 @@ class AuthService {
       const savedSession = sessionStorage.getItem('pyroguard_current_user');
       const saved = savedLocal || savedSession;
       if (saved) {
-        this.currentUser = JSON.parse(saved);
+        const user: User = JSON.parse(saved);
+        // Enforce web app restriction: web users always have standard 'user' role
+        user.role = 'user';
+        this.currentUser = user;
       }
     } catch (e) {
       console.warn('Failed to load user session:', e);
@@ -63,14 +66,20 @@ class AuthService {
 
           const data = await res.json();
           if (res.ok && data.success && data.user) {
-            this.currentUser = data.user;
+            // Web login enforces standard 'user' role (Admin full access is exclusive to mobile app)
+            const webUser: User = {
+              ...data.user,
+              role: 'user',
+            };
+
+            this.currentUser = webUser;
             if (remember) {
-              localStorage.setItem('pyroguard_current_user', JSON.stringify(data.user));
+              localStorage.setItem('pyroguard_current_user', JSON.stringify(webUser));
             } else {
-              sessionStorage.setItem('pyroguard_current_user', JSON.stringify(data.user));
+              sessionStorage.setItem('pyroguard_current_user', JSON.stringify(webUser));
             }
             this.notify();
-            return { success: true, user: data.user };
+            return { success: true, user: webUser };
           } else if (data.error) {
             return { success: false, error: data.error };
           }
@@ -85,7 +94,7 @@ class AuthService {
     }
   }
 
-  public async register(name: string, email: string, pass: string, role: 'admin' | 'user'): Promise<{ success: boolean; error?: string }> {
+  public async register(name: string, email: string, pass: string, _role: 'admin' | 'user'): Promise<{ success: boolean; error?: string }> {
     try {
       const endpoints = [
         `${API_BASE}/api/register`,
@@ -98,7 +107,7 @@ class AuthService {
             method: 'POST',
             mode: 'cors',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password: pass, role }),
+            body: JSON.stringify({ name, email, password: pass, role: 'user' }),
           });
 
           const data = await res.json();

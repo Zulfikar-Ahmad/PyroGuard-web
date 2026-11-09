@@ -14,7 +14,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'admin' | 'user'>('user');
   const [rememberMe, setRememberMe] = useState(true);
 
   const [loading, setLoading] = useState(false);
@@ -60,7 +59,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
     }
 
     setLoading(true);
-    const res = await authService.register(name.trim(), email.trim(), password, role);
+    // Web registration always registers standard 'user' role. Admin access is exclusive to the mobile app.
+    const res = await authService.register(name.trim(), email.trim(), password, 'user');
     setLoading(false);
 
     if (res.success) {
@@ -108,13 +108,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
             <Shield className="w-7 h-7" />
           </div>
           <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
-            {view === 'login' && 'Masuk ke PyroGuard'}
+            {view === 'login' && 'Masuk ke PyroGuard (Web)'}
             {view === 'register' && 'Daftar Akun Baru'}
             {view === 'forgot' && 'Pemulihan Password'}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {view === 'login' && 'Sistem Monitoring IoT Gudang Pintar & MariaDB'}
-            {view === 'register' && 'Buat akun untuk mengakses sistem pemantauan'}
+            {view === 'login' && 'Akses Web (Akun Biasa / User Role)'}
+            {view === 'register' && 'Buat akun baru untuk pemantauan gudang'}
             {view === 'forgot' && 'Masukkan email terdaftar untuk reset password'}
           </p>
         </div>
@@ -145,7 +145,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@pyroguard.app"
+                  placeholder="user@pyroguard.app"
                   required
                   className="w-full pl-10 pr-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 />
@@ -193,7 +193,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
               className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white font-extrabold text-xs tracking-wide uppercase transition shadow-lg shadow-blue-500/25 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>Masuk Sistem</span>
+              <span>Masuk Web (Akun Biasa)</span>
             </button>
 
             <div className="text-center pt-2 text-xs text-slate-500 dark:text-slate-400">
@@ -256,35 +256,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Jenis Akun (Role)</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRole('user')}
-                  className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition ${
-                    role === 'user'
-                      ? 'bg-blue-600 text-white border-transparent shadow-md'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
-                  }`}
-                >
-                  👤 Akun Biasa (User)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('admin')}
-                  className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition ${
-                    role === 'admin'
-                      ? 'bg-blue-600 text-white border-transparent shadow-md'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
-                  }`}
-                >
-                  🛡️ Administrator
-                </button>
-              </div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                {role === 'user' ? 'Hanya dapat melihat Dashboard & Histori.' : 'Akses penuh termasuk Kontrol & Pengaturan Server.'}
-              </p>
+            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] font-semibold">
+              ℹ️ Pendaftaran via Web otomatis mendaftarkan akun sebagai **Akun Biasa (User)**. Akses Admin penuh khusus melalui Aplikasi Mobile (Flutter).
             </div>
 
             <button
