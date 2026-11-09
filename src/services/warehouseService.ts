@@ -50,9 +50,9 @@ class WarehouseService {
     tempHistory: [0, 0, 0, 0, 0, 0, 0, 0],
     humHistory: [0, 0, 0, 0, 0, 0, 0, 0],
     timeHistory: ['--:--:--', '--:--:--', '--:--:--', '--:--:--', '--:--:--', '--:--:--', '--:--:--', '--:--:--'],
-    logRecords: this.loadHistoryCache(),
+    logRecords: [],
     mqttLogs: [
-      `[${this.formatTime(new Date())}] [SYSTEM] Memulai sistem monitoring MQTT & MySQL...`,
+      `[${this.formatTime(new Date())}] [SYSTEM] Memulai sistem monitoring MQTT & MariaDB Database...`,
       `[${this.formatTime(new Date())}] [INFO] Menghubungkan ke Broker Cloudflare Tunnel wss://mqtt.pyroguard.app:443 (User: pyroadmin)...`,
     ],
   };
@@ -68,26 +68,6 @@ class WarehouseService {
       WarehouseService.instance = new WarehouseService();
     }
     return WarehouseService.instance;
-  }
-
-  private loadHistoryCache(): LogRecord[] {
-    try {
-      const cached = localStorage.getItem('pyroguard_history_cache');
-      if (cached) {
-        return JSON.parse(cached);
-      }
-    } catch (e) {
-      console.warn('Failed to load history cache from localStorage:', e);
-    }
-    return [];
-  }
-
-  private saveHistoryCache(records: LogRecord[]) {
-    try {
-      localStorage.setItem('pyroguard_history_cache', JSON.stringify(records));
-    } catch (e) {
-      console.warn('Failed to save history cache to localStorage:', e);
-    }
   }
 
   public getState(): TelemetryState {
@@ -312,17 +292,15 @@ class WarehouseService {
   }
 
   /*
-   * Add Record to Local State, LocalStorage Cache and Post to MySQL Database / REST API
+   * Add Record to Local State and Post to MySQL Database / REST API
    */
   private addLogRecordAndSyncDb(record: LogRecord, sourceLabel: string) {
     const timeStr = this.formatTime();
     const newRecords = [record, ...this.state.logRecords.slice(0, 99)];
     const logs = [
       ...this.state.mqttLogs,
-      `[${timeStr}] ${sourceLabel} Menyimpan rekaman histori (Temp:${record.temperature}°C, Status:${record.status}) ke Database MySQL ${this.state.mysqlDbHost}:${this.state.mysqlDbPort}/${this.state.mysqlDbName}...`,
+      `[${timeStr}] ${sourceLabel} Menyimpan rekaman histori (Temp:${record.temperature}°C, Status:${record.status}) ke Database MySQL/MariaDB (${this.state.mysqlDbName})...`,
     ];
-
-    this.saveHistoryCache(newRecords);
 
     this.state = {
       ...this.state,
@@ -338,13 +316,13 @@ class WarehouseService {
   /*
    * Fetch History from MySQL Database REST API on startup
    */
-  private async fetchHistoryFromApi() {
+  public async fetchHistoryFromApi() {
     try {
       if (this.state.mysqlApiEndpoint && this.state.mysqlApiEndpoint.startsWith('http')) {
         const res = await fetch(this.state.mysqlApiEndpoint, { method: 'GET' });
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
+          if (Array.isArray(data)) {
             const fetchedRecords: LogRecord[] = data.map((item: {
               id?: string | number;
               timestamp?: string;
@@ -366,7 +344,8 @@ class WarehouseService {
             }));
 
             this.state.logRecords = fetchedRecords;
-            this.saveHistoryCache(fetchedRecords);
+            const logMsg = `[${this.formatTime()}] [MYSQL GET] Berhasil memuat ${fetchedRecords.length} data histori dari database MariaDB.`;
+            this.state.mqttLogs = [...this.state.mqttLogs, logMsg];
             this.notify();
           }
         }
@@ -380,9 +359,10 @@ class WarehouseService {
    * Backend Sync Function: Send LogRecord to MySQL Database via REST API
    */
   private async syncRecordToMysqlDatabase(record: LogRecord) {
+    const timeStr = this.formatTime();
     try {
       if (this.state.mysqlApiEndpoint && this.state.mysqlApiEndpoint.startsWith('http')) {
-        await fetch(this.state.mysqlApiEndpoint, {
+        const res = await fetch(this.state.mysqlApiEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -398,9 +378,21 @@ class WarehouseService {
             db_pass: this.state.mysqlDbPass,
           }),
         });
+
+        if (res.ok) {
+          const okLog = `[${timeStr}] [MYSQL OK] Data histori berhasil tersimpan ke tabel MariaDB!`;
+          this.state.mqttLogs = [...this.state.mqttLogs, okLog];
+        } else {
+          const errText = await res.text();
+          const errLog = `[${timeStr}] [MYSQL HTTP ERROR ${res.status}] Gagal menyimpan ke Database: ${errText}`;
+          this.state.mqttLogs = [...this.state.mqttLogs, errLog];
+        }
+        this.notify();
       }
     } catch (err) {
-      console.warn('MySQL API sync error:', err);
+      const errLog = `[${timeStr}] [MYSQL SYNC FAILED] Gagal menghubungi API Endpoint (${this.state.mysqlApiEndpoint}): ${err}`;
+      this.state.mqttLogs = [...this.state.mqttLogs, errLog];
+      this.notify();
     }
   }
 
@@ -496,7 +488,6 @@ class WarehouseService {
 
   public clearHistory() {
     this.state = { ...this.state, logRecords: [] };
-    localStorage.removeItem('pyroguard_history_cache');
     this.notify();
   }
 
