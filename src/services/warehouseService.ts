@@ -549,9 +549,34 @@ class WarehouseService {
     this.notify();
   }
 
-  public clearHistory() {
+  public async clearHistory() {
     this.state = { ...this.state, logRecords: [] };
     this.notify();
+
+    const timeStr = this.formatTime();
+    const cleanBase = this.state.mysqlApiEndpoint.replace(/\/api\/history|\/history|\/$/, '');
+    const endpoints = [
+      `${cleanBase}/api/history`,
+      `${cleanBase}/history`,
+      this.state.mysqlApiEndpoint,
+    ];
+    const uniqueEndpoints = Array.from(new Set(endpoints));
+
+    for (const url of uniqueEndpoints) {
+      try {
+        if (url && url.startsWith('http')) {
+          const res = await fetch(url, { method: 'DELETE', mode: 'cors' });
+          if (res.ok) {
+            const okLog = `[${timeStr}] [MYSQL DELETE OK] Seluruh histori berhasil dihapus dari database MariaDB via ${url}!`;
+            this.state.mqttLogs = [...this.state.mqttLogs, okLog];
+            this.notify();
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to delete history from API:', url, err);
+      }
+    }
   }
 
   public exportCsvData(): string {
