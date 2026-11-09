@@ -19,8 +19,6 @@ export interface TelemetryState {
   systemStatus: SystemStatus;
   tempThreshold: number;
   smokeThreshold: number;
-  wifiSsid: string;
-  wifiPass: string;
 
   // MQTT Config
   mqttHost: string;

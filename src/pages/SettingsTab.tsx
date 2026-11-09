@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Monitor, Sun, Moon, Palette, Wifi, Lock, Thermometer, CloudRain, Save, Check, Database, Radio, Clock } from 'lucide-react';
+import { Monitor, Sun, Moon, Palette, Thermometer, CloudRain, Save, Check, Database, Radio, Clock } from 'lucide-react';
 import { TelemetryState } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { warehouseService } from '../services/warehouseService';
@@ -12,8 +12,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
   const { themeMode, setThemeMode, isDynamicColorAvailable } = useTheme();
 
   // Settings form states
-  const [ssid, setSsid] = useState(state.wifiSsid);
-  const [pass, setPass] = useState(state.wifiPass);
   const [tempThresh, setTempThresh] = useState(state.tempThreshold.toString());
   const [smokeThresh, setSmokeThresh] = useState(state.smokeThreshold.toString());
 
@@ -70,8 +68,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
     warehouseService.updateSettings({
       tempThreshold: tempVal,
       smokeThreshold: smokeVal,
-      wifiSsid: ssid.trim(),
-      wifiPass: pass.trim(),
       mqttHost: mqttHost.trim(),
       mqttPort: mPort,
       mqttTopic: mqttTopic.trim(),
@@ -228,20 +224,20 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
               <span>Konfigurasi MQTT Broker (ESP32 Stream)</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Alamat IP/Host broker tempat ESP32-S3 mengirimkan aliran stream telemetri real-time.
+              Alamat Domain/Host broker tempat ESP32-S3 mengirimkan aliran stream telemetri real-time.
             </p>
           </div>
 
           <div className="p-5 rounded-2xl glass-card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                MQTT Broker Host / IP
+                MQTT Broker Host / Domain
               </label>
               <input
                 type="text"
                 value={mqttHost}
                 onChange={(e) => setMqttHost(e.target.value)}
-                placeholder="192.168.1.105 / broker.emqx.io"
+                placeholder="mqtt.pyroguard.app"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
             </div>
@@ -254,7 +250,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
                 type="number"
                 value={mqttPort}
                 onChange={(e) => setMqttPort(e.target.value)}
-                placeholder="1883"
+                placeholder="443"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
             </div>
@@ -274,20 +270,20 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                MQTT Username (Opsional)
+                MQTT Username
               </label>
               <input
                 type="text"
                 value={mqttUser}
                 onChange={(e) => setMqttUser(e.target.value)}
-                placeholder="admin"
+                placeholder="pyroadmin"
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                MQTT Password (Opsional)
+                MQTT Password
               </label>
               <input
                 type="password"
@@ -393,51 +389,19 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           </div>
         </div>
 
-        {/* 4. Wi-Fi & Threshold Configuration */}
+        {/* 4. Threshold Configuration */}
         <div className="space-y-4">
           <div>
             <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
-              <Wifi className="w-5 h-5 text-sky-500" />
-              <span>Konfigurasi Wi-Fi & Ambang Batas Sensor</span>
+              <Thermometer className="w-5 h-5 text-orange-500" />
+              <span>Konfigurasi Ambang Batas Sensor (Threshold)</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Atur SSID Wi-Fi ESP32-S3 & batas maksimal sensor penentu alarm otomatis.
+              Atur batas maksimal sensor penentu alarm otomatis & aktuator.
             </p>
           </div>
 
           <div className="p-5 rounded-2xl glass-card grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                SSID / Nama Wi-Fi ESP32
-              </label>
-              <div className="relative">
-                <Wifi className="w-4 h-4 absolute left-3.5 top-3.5 text-blue-500" />
-                <input
-                  type="text"
-                  value={ssid}
-                  onChange={(e) => setSsid(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                  placeholder="Nama Wi-Fi"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                Password Wi-Fi ESP32
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-blue-500" />
-                <input
-                  type="password"
-                  value={pass}
-                  onChange={(e) => setPass(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                  placeholder="Password Wi-Fi"
-                />
-              </div>
-            </div>
-
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                 Batas Maksimum Suhu (°C)

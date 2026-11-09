@@ -36,8 +36,6 @@ class WarehouseService {
     systemStatus: 'Offline',
     tempThreshold: 45.0,
     smokeThreshold: 30.0,
-    wifiSsid: 'PyroGuard_Warehouse_5G',
-    wifiPass: 'GudangUtama2024!',
 
     // MQTT Configuration (Cloudflare Tunnel to Docker VM)
     mqttHost: 'mqtt.pyroguard.app',
@@ -401,8 +399,6 @@ class WarehouseService {
   public updateSettings(config: {
     tempThreshold: number;
     smokeThreshold: number;
-    wifiSsid: string;
-    wifiPass: string;
     mqttHost: string;
     mqttPort: number;
     mqttTopic: string;
