@@ -148,7 +148,7 @@ class WarehouseService {
         this.notify();
       });
 
-      this.client.on('message', (topic, message) => {
+      this.client.on('message', (_topic, message) => {
         try {
           const payload = JSON.parse(message.toString());
           this.onMqttMessageReceived({
