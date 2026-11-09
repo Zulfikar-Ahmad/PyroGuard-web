@@ -59,7 +59,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
     }
 
     setLoading(true);
-    // Web registration always registers standard 'user' role. Admin access is exclusive to the mobile app.
     const res = await authService.register(name.trim(), email.trim(), password, 'user');
     setLoading(false);
 
@@ -108,12 +107,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
             <Shield className="w-7 h-7" />
           </div>
           <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
-            {view === 'login' && 'Masuk ke PyroGuard (Web)'}
+            {view === 'login' && 'Masuk ke PyroGuard'}
             {view === 'register' && 'Daftar Akun Baru'}
             {view === 'forgot' && 'Pemulihan Password'}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {view === 'login' && 'Akses Web (Akun Biasa / User Role)'}
+            {view === 'login' && 'Sistem Monitoring IoT Gudang Pintar'}
             {view === 'register' && 'Buat akun baru untuk pemantauan gudang'}
             {view === 'forgot' && 'Masukkan email terdaftar untuk reset password'}
           </p>
@@ -193,7 +192,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
               className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white font-extrabold text-xs tracking-wide uppercase transition shadow-lg shadow-blue-500/25 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              <span>Masuk Web (Akun Biasa)</span>
+              <span>Masuk</span>
             </button>
 
             <div className="text-center pt-2 text-xs text-slate-500 dark:text-slate-400">
@@ -254,10 +253,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onSuccess }) => {
                   className="w-full pl-10 pr-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 />
               </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] font-semibold">
-              ℹ️ Pendaftaran via Web otomatis mendaftarkan akun sebagai **Akun Biasa (User)**. Akses Admin penuh khusus melalui Aplikasi Mobile (Flutter).
             </div>
 
             <button
