@@ -8,7 +8,6 @@ import {
   LogOut,
   Clock,
   Radio,
-  Lock,
 } from 'lucide-react';
 import { TelemetryState } from '../types';
 import { warehouseService } from '../services/warehouseService';
@@ -26,10 +25,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [state, setState] = useState<TelemetryState>(warehouseService.getState());
   const [timeString, setTimeString] = useState('');
-  const [accessDeniedMsg, setAccessDeniedMsg] = useState('');
 
   const currentUser = authService.getCurrentUser();
-  const isAdmin = currentUser?.role === 'admin';
 
   useEffect(() => {
     const unsubscribe = warehouseService.subscribe((newState) => {
@@ -52,15 +49,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleTabChange = (idx: number) => {
-    if (idx === 1 && !isAdmin) {
-      setAccessDeniedMsg('Fitur Kontrol Perangkat hanya tersedia melalui Aplikasi Mobile (App Only)!');
-      setTimeout(() => setAccessDeniedMsg(''), 3500);
-      return;
-    }
-    setActiveTab(idx);
-  };
-
   const navItems = [
     { label: 'Dashboard', icon: LayoutDashboard },
     { label: 'Kontrol', icon: Sliders },
@@ -70,14 +58,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors relative">
-      {/* Access Denied Toast */}
-      {accessDeniedMsg && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-amber-500 text-slate-950 font-bold text-xs shadow-2xl flex items-center gap-2 animate-bounce">
-          <Lock className="w-4 h-4" />
-          <span>{accessDeniedMsg}</span>
-        </div>
-      )}
-
       {/* Full-Width Top Navigation Bar */}
       <header className="glass-panel sticky top-0 z-40 border-b shadow-sm w-full">
         <div className="w-full px-4 sm:px-6 md:px-8 py-3 flex items-center justify-between gap-4">
@@ -108,27 +88,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
             {navItems.map((item, idx) => {
               const Icon = item.icon;
               const isSelected = activeTab === idx;
-              const isLocked = idx === 1 && !isAdmin;
-
               return (
                 <button
                   key={idx}
-                  onClick={() => handleTabChange(idx)}
+                  onClick={() => setActiveTab(idx)}
                   title={item.label}
                   className={`group relative flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
                     isSelected
                       ? 'bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-md shadow-blue-500/25 scale-[1.02]'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50'
-                  } ${isLocked ? 'opacity-70' : ''}`}
+                  }`}
                 >
-                  <div className="relative">
-                    <Icon className="w-4.5 h-4.5 flex-shrink-0" />
-                    {isLocked && (
-                      <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-amber-500 text-slate-950 rounded-full flex items-center justify-center text-[8px] font-extrabold">
-                        🔒
-                      </span>
-                    )}
-                  </div>
+                  <Icon className="w-4.5 h-4.5 flex-shrink-0" />
                   <span
                     className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
                       isSelected
@@ -176,17 +147,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
       {/* Main Full-Width Tab Content Container */}
       <main className="flex-1 w-full px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-10">
         {activeTab === 0 && <DashboardTab state={state} />}
-        {activeTab === 1 && (isAdmin ? <ControlTab state={state} /> : (
-          <div className="p-12 text-center rounded-2xl glass-card space-y-3 max-w-md mx-auto mt-12">
-            <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-              <Lock className="w-6 h-6" />
-            </div>
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Akses Eksklusif Aplikasi Mobile</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Menu Kontrol Perangkat hanya dapat diakses melalui **Aplikasi Mobile (App Only)**.
-            </p>
-          </div>
-        ))}
+        {activeTab === 1 && <ControlTab state={state} />}
         {activeTab === 2 && <HistoryTab state={state} />}
         {activeTab === 3 && <SettingsTab state={state} />}
       </main>
@@ -196,12 +157,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
         {navItems.map((item, idx) => {
           const Icon = item.icon;
           const isSelected = activeTab === idx;
-          const isLocked = idx === 1 && !isAdmin;
-
           return (
             <button
               key={idx}
-              onClick={() => handleTabChange(idx)}
+              onClick={() => setActiveTab(idx)}
               title={item.label}
               aria-label={item.label}
               className={`p-2.5 rounded-full transition-all duration-300 flex items-center justify-center relative ${
@@ -211,11 +170,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onLogout }) => {
               }`}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />
-              {isLocked && (
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 text-slate-950 rounded-full flex items-center justify-center text-[8px] font-extrabold">
-                  🔒
-                </span>
-              )}
             </button>
           );
         })}
