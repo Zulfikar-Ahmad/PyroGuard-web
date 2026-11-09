@@ -11,26 +11,6 @@ class WarehouseService {
   private scheduleCheckTimer: number | null = null;
   private lastSavedDate: string = '';
 
-  /*
-   * ============================================================================
-   * CONFIGURATION KEYS FOR MQTT BROKER & MYSQL DATABASE / REST API
-   * ============================================================================
-   * 1. MQTT Broker Details (Cloudflare Tunnel to Docker VM):
-   *    - Domain/Host: mqttHost (default: "mqtt.pyroguard.app")
-   *    - Port: mqttPort (default: 443 WSS)
-   *    - Username: mqttUser (default: "pyroadmin")
-   *    - Password: mqttPass (default: "pyroguard371")
-   *    - Topic: mqttTopic (default: "warehouse/sensors/telemetry")
-   *
-   * 2. MySQL / Backend API Details:
-   *    - API Endpoint: mysqlApiEndpoint (default: "https://api.pyroguard.app/api/history")
-   *    - Database Host: mysqlDbHost (default: "127.0.0.1")
-   *    - Database Name: mysqlDbName (default: "warehouse_iot")
-   *    - Database User: mysqlDbUser (default: "pyroadmin")
-   *    - Database Pass: mysqlDbPass (default: "pyroguard371")
-   * ============================================================================
-   */
-
   private state: TelemetryState = {
     isDeviceConnected: false,
     temperature: 0,
@@ -70,7 +50,7 @@ class WarehouseService {
     tempHistory: [0, 0, 0, 0, 0, 0, 0, 0],
     humHistory: [0, 0, 0, 0, 0, 0, 0, 0],
     timeHistory: ['--:--:--', '--:--:--', '--:--:--', '--:--:--', '--:--:--', '--:--:--', '--:--:--', '--:--:--'],
-    logRecords: [],
+    logRecords: this.loadHistoryCache(),
     mqttLogs: [
       `[${this.formatTime(new Date())}] [SYSTEM] Memulai sistem monitoring MQTT & MySQL...`,
       `[${this.formatTime(new Date())}] [INFO] Menghubungkan ke Broker Cloudflare Tunnel wss://mqtt.pyroguard.app:443 (User: pyroadmin)...`,
@@ -80,6 +60,7 @@ class WarehouseService {
   private constructor() {
     this.startScheduleChecker();
     this.initMqttConnection();
+    this.fetchHistoryFromApi();
   }
 
   public static getInstance(): WarehouseService {
@@ -87,6 +68,26 @@ class WarehouseService {
       WarehouseService.instance = new WarehouseService();
     }
     return WarehouseService.instance;
+  }
+
+  private loadHistoryCache(): LogRecord[] {
+    try {
+      const cached = localStorage.getItem('pyroguard_history_cache');
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {
+      console.warn('Failed to load history cache from localStorage:', e);
+    }
+    return [];
+  }
+
+  private saveHistoryCache(records: LogRecord[]) {
+    try {
+      localStorage.setItem('pyroguard_history_cache', JSON.stringify(records));
+    } catch (e) {
+      console.warn('Failed to save history cache to localStorage:', e);
+    }
   }
 
   public getState(): TelemetryState {
@@ -311,7 +312,7 @@ class WarehouseService {
   }
 
   /*
-   * Add Record to Local State and Post to MySQL Database / REST API
+   * Add Record to Local State, LocalStorage Cache and Post to MySQL Database / REST API
    */
   private addLogRecordAndSyncDb(record: LogRecord, sourceLabel: string) {
     const timeStr = this.formatTime();
@@ -320,6 +321,8 @@ class WarehouseService {
       ...this.state.mqttLogs,
       `[${timeStr}] ${sourceLabel} Menyimpan rekaman histori (Temp:${record.temperature}°C, Status:${record.status}) ke Database MySQL ${this.state.mysqlDbHost}:${this.state.mysqlDbPort}/${this.state.mysqlDbName}...`,
     ];
+
+    this.saveHistoryCache(newRecords);
 
     this.state = {
       ...this.state,
@@ -330,6 +333,47 @@ class WarehouseService {
 
     // Async call to MySQL / REST API backend
     this.syncRecordToMysqlDatabase(record);
+  }
+
+  /*
+   * Fetch History from MySQL Database REST API on startup
+   */
+  private async fetchHistoryFromApi() {
+    try {
+      if (this.state.mysqlApiEndpoint && this.state.mysqlApiEndpoint.startsWith('http')) {
+        const res = await fetch(this.state.mysqlApiEndpoint, { method: 'GET' });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const fetchedRecords: LogRecord[] = data.map((item: {
+              id?: string | number;
+              timestamp?: string;
+              timeFormatted?: string;
+              temperature: number;
+              humidity: number;
+              smoke: number;
+              flame_detected?: boolean | number;
+              flameDetected?: boolean;
+              status: SystemStatus;
+            }) => ({
+              id: String(item.id || Math.random()),
+              timeFormatted: item.timeFormatted || item.timestamp || this.formatTime(),
+              temperature: Number(item.temperature),
+              humidity: Number(item.humidity),
+              smoke: Number(item.smoke),
+              flameDetected: Boolean(item.flame_detected ?? item.flameDetected ?? false),
+              status: item.status || 'Aman',
+            }));
+
+            this.state.logRecords = fetchedRecords;
+            this.saveHistoryCache(fetchedRecords);
+            this.notify();
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch history records from MySQL API:', e);
+    }
   }
 
   /*
@@ -452,6 +496,7 @@ class WarehouseService {
 
   public clearHistory() {
     this.state = { ...this.state, logRecords: [] };
+    localStorage.removeItem('pyroguard_history_cache');
     this.notify();
   }
 
@@ -488,6 +533,7 @@ class WarehouseService {
 
     // Re-initialize MQTT connection if host/port/credentials changed
     this.initMqttConnection();
+    this.fetchHistoryFromApi();
     this.notify();
   }
 
