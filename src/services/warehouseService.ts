@@ -1,3 +1,4 @@
+import mqtt, { MqttClient } from 'mqtt';
 import { LogRecord, SystemStatus, TelemetryState } from '../types';
 
 type Listener = (state: TelemetryState) => void;
@@ -5,6 +6,7 @@ type Listener = (state: TelemetryState) => void;
 class WarehouseService {
   private static instance: WarehouseService;
   private listeners: Set<Listener> = new Set();
+  private client: MqttClient | null = null;
   private connectionTimer: number | null = null;
   private scheduleCheckTimer: number | null = null;
   private lastSavedDate: string = '';
@@ -15,7 +17,7 @@ class WarehouseService {
    * ============================================================================
    * 1. MQTT Broker Details (Cloudflare Tunnel to Docker VM):
    *    - Domain/Host: mqttHost (default: "mqtt.pyroguard.app")
-   *    - Port: mqttPort (default: 443 / 8083 WSS)
+   *    - Port: mqttPort (default: 443 WSS)
    *    - Username: mqttUser (default: "pyroadmin")
    *    - Password: mqttPass (default: "pyroguard371")
    *    - Topic: mqttTopic (default: "warehouse/sensors/telemetry")
@@ -23,7 +25,7 @@ class WarehouseService {
    * 2. MySQL / Backend API Details:
    *    - API Endpoint: mysqlApiEndpoint (default: "https://api.pyroguard.app/api/history")
    *    - Database Host: mysqlDbHost (default: "127.0.0.1")
-   *    - Database Name: mysqlDbName (default: "pyroguard_db")
+   *    - Database Name: mysqlDbName (default: "warehouse_iot")
    * ============================================================================
    */
 
@@ -37,18 +39,18 @@ class WarehouseService {
     tempThreshold: 45.0,
     smokeThreshold: 30.0,
 
-    // MQTT Configuration (Cloudflare Tunnel to Docker VM)
+    // MQTT Configuration (Cloudflare Tunnel WSS to Docker VM)
     mqttHost: 'mqtt.pyroguard.app',
     mqttPort: 443,
     mqttTopic: 'warehouse/sensors/telemetry',
     mqttUser: 'pyroadmin',
     mqttPass: 'pyroguard371',
 
-    // MySQL / Database Configuration
+    // MySQL / REST API Configuration
     mysqlApiEndpoint: 'https://api.pyroguard.app/api/history',
     mysqlDbHost: '127.0.0.1',
     mysqlDbPort: 3306,
-    mysqlDbName: 'pyroguard_db',
+    mysqlDbName: 'warehouse_iot',
     mysqlDbUser: 'pyroguard_user',
     mysqlDbPass: 'pyroguard_pass',
 
@@ -69,8 +71,7 @@ class WarehouseService {
     logRecords: [],
     mqttLogs: [
       `[${this.formatTime(new Date())}] [SYSTEM] Memulai sistem monitoring MQTT & MySQL...`,
-      `[${this.formatTime(new Date())}] [INFO] Menghubungkan ke Broker Cloudflare Tunnel mqtt.pyroguard.app:443 (User: pyroadmin)...`,
-      `[${this.formatTime(new Date())}] [INFO] Menunggu aliran data stream dari ESP32-S3 (Topic: warehouse/sensors/telemetry)...`,
+      `[${this.formatTime(new Date())}] [INFO] Menghubungkan ke Broker Cloudflare Tunnel wss://mqtt.pyroguard.app:443 (User: pyroadmin)...`,
     ],
   };
 
@@ -116,15 +117,58 @@ class WarehouseService {
   }
 
   /*
-   * Initialize MQTT Connection & Message Listener
+   * Connect Real MQTT WebSocket Client to wss://mqtt.pyroguard.app:443
    */
   private initMqttConnection() {
+    const protocol = this.state.mqttPort === 443 ? 'wss' : 'ws';
+    const brokerUrl = `${protocol}://${this.state.mqttHost}:${this.state.mqttPort}`;
     const timeStr = this.formatTime();
-    const log = `[${timeStr}] [MQTT] Menghubungkan ke Cloudflare Broker Tunnel wss://${this.state.mqttHost}:${this.state.mqttPort} (User: ${this.state.mqttUser})...`;
-    this.state.mqttLogs = [...this.state.mqttLogs, log];
-    this.notify();
 
-    // Setup periodic heart-beat connection timeout check
+    try {
+      if (this.client) {
+        this.client.end(true);
+      }
+
+      this.client = mqtt.connect(brokerUrl, {
+        username: this.state.mqttUser,
+        password: this.state.mqttPass,
+        keepalive: 60,
+        clientId: 'PyroGuardWeb_' + Math.random().toString(16).substring(2, 8),
+        clean: true,
+        reconnectPeriod: 4000,
+        connectTimeout: 10000,
+      });
+
+      this.client.on('connect', () => {
+        const connectLog = `[${this.formatTime()}] [MQTT CONNECTED] Berhasil terhubung ke ${brokerUrl}`;
+        this.state.mqttLogs = [...this.state.mqttLogs, connectLog];
+        this.client?.subscribe(this.state.mqttTopic);
+        this.notify();
+      });
+
+      this.client.on('message', (topic, message) => {
+        try {
+          const payload = JSON.parse(message.toString());
+          this.onMqttMessageReceived({
+            temperature: Number(payload.temperature ?? payload.temp ?? 0),
+            humidity: Number(payload.humidity ?? payload.hum ?? 0),
+            smoke: Number(payload.smoke ?? payload.smk ?? 0),
+            flameDetected: Boolean(payload.flameDetected ?? payload.flame ?? false),
+          });
+        } catch (err) {
+          console.warn('Failed to parse MQTT JSON payload:', err);
+        }
+      });
+
+      this.client.on('error', (err) => {
+        console.warn('MQTT WebSocket Error:', err.message);
+      });
+    } catch (e) {
+      const errLog = `[${timeStr}] [MQTT EXCEPTION] ${e}`;
+      this.state.mqttLogs = [...this.state.mqttLogs, errLog];
+      this.notify();
+    }
+
     if (this.connectionTimer) clearInterval(this.connectionTimer);
     this.connectionTimer = window.setInterval(() => {
       this.checkConnectionTimeout();
@@ -177,7 +221,6 @@ class WarehouseService {
    * If ESP32 is turned off or disconnected, reset metrics to 0 and set status to Offline
    */
   private checkConnectionTimeout() {
-    // If no stream data has arrived or device is marked offline
     if (!this.state.isDeviceConnected) {
       if (this.state.systemStatus !== 'Offline') {
         const timeStr = this.formatTime();
@@ -283,7 +326,7 @@ class WarehouseService {
     };
     this.notify();
 
-    // Async call to MySQL / REST API
+    // Async call to MySQL / REST API backend
     this.syncRecordToMysqlDatabase(record);
   }
 
@@ -320,6 +363,9 @@ class WarehouseService {
       ...this.state.mqttLogs,
       `[${timeStr}] [PUBLISH] warehouse/actuator/fan -> ${value ? 'ON' : 'OFF'}`,
     ];
+    if (this.client && this.client.connected) {
+      this.client.publish('warehouse/actuator/fan', value ? 'ON' : 'OFF');
+    }
     this.state = { ...this.state, exhaustFan: value, mqttLogs: newLogs };
     this.notify();
   }
@@ -330,6 +376,9 @@ class WarehouseService {
       ...this.state.mqttLogs,
       `[${timeStr}] [PUBLISH] warehouse/actuator/sprinkler -> ${value ? 'ON' : 'OFF'}`,
     ];
+    if (this.client && this.client.connected) {
+      this.client.publish('warehouse/actuator/sprinkler', value ? 'ON' : 'OFF');
+    }
     this.state = { ...this.state, sprinkler: value, mqttLogs: newLogs };
     this.notify();
   }
@@ -340,6 +389,9 @@ class WarehouseService {
       ...this.state.mqttLogs,
       `[${timeStr}] [PUBLISH] warehouse/actuator/siren -> ${value ? 'ACTIVE' : 'STANDBY'}`,
     ];
+    if (this.client && this.client.connected) {
+      this.client.publish('warehouse/actuator/siren', value ? 'ACTIVE' : 'STANDBY');
+    }
     this.state = { ...this.state, sirenAlarm: value, mqttLogs: newLogs };
     this.notify();
   }
@@ -351,6 +403,9 @@ class WarehouseService {
       `[${timeStr}] [EMERGENCY] 🔥 ALARM KEBAKARAN DITRIGGER!`,
       `[${timeStr}] [PUBLISH] warehouse/emergency -> SIRINE & SPRINKLER DIAKTIFKAN`,
     ];
+    if (this.client && this.client.connected) {
+      this.client.publish('warehouse/emergency', 'TRIGGERED');
+    }
     this.state = {
       ...this.state,
       isEmergencyMode: true,
@@ -370,6 +425,9 @@ class WarehouseService {
       ...this.state.mqttLogs,
       `[${timeStr}] [RESET] Status darurat berhasil direset ke mode Normal.`,
     ];
+    if (this.client && this.client.connected) {
+      this.client.publish('warehouse/emergency', 'RESET');
+    }
     this.state = {
       ...this.state,
       isEmergencyMode: false,
@@ -424,6 +482,8 @@ class WarehouseService {
       mqttLogs: newLogs,
     };
 
+    // Re-initialize MQTT connection if host/port/credentials changed
+    this.initMqttConnection();
     this.notify();
   }
 
