@@ -43,7 +43,7 @@ class WarehouseService {
 
     // MQTT Configuration (Cloudflare Tunnel WSS to Docker VM)
     mqttHost: 'mqtt.pyroguard.app',
-    mqttPort: 443,
+    mqttPort: 1883,
     mqttTopic: 'warehouse/sensors/telemetry',
     mqttUser: 'pyroadmin',
     mqttPass: 'pyroguard371',
