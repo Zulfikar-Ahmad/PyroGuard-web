@@ -1,31 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { DashboardPage } from './pages/DashboardPage';
-import { AuthModal } from './components/AuthModal';
-import { authService } from './services/authService';
-import { User } from './types';
 
 export const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => authService.getCurrentUser());
-
-  useEffect(() => {
-    const unsubscribe = authService.subscribe((user) => {
-      setCurrentUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogout = () => {
-    authService.logout();
-  };
-
+  /*
+   * Server offline mode: Auth gate bypassed so Web App opens directly to Dashboard.
+   * Authentication code and components remain preserved in src/services/authService.ts and src/components/AuthModal.tsx.
+   */
   return (
     <ThemeProvider>
-      {currentUser ? (
-        <DashboardPage onLogout={handleLogout} />
-      ) : (
-        <AuthModal isOpen={true} onSuccess={() => {}} />
-      )}
+      <DashboardPage onLogout={() => {}} />
     </ThemeProvider>
   );
 };
