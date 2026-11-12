@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Monitor, Sun, Moon, Palette, Thermometer, Save, Check, Clock, Globe, ArrowLeft, ChevronRight, Settings, Info, Sliders } from 'lucide-react';
+import { Monitor, Sun, Moon, Palette, Thermometer, Save, Check, Clock, Globe, ArrowLeft, ChevronRight, Settings, Info, Sliders, Lock } from 'lucide-react';
 import { TelemetryState } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage, LanguageCode } from '../context/LanguageContext';
@@ -106,20 +106,27 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
               <ChevronRight className="w-5 h-5 text-slate-400" />
             </div>
 
+            {/* System Settings - Greyed out / Locked for Web */}
             <div
-              onClick={() => setActiveSubpage('system')}
-              className="p-5 rounded-2xl glass-card flex items-center justify-between cursor-pointer hover:border-emerald-500/40 transition duration-300"
+              className="p-5 rounded-2xl glass-card flex items-center justify-between opacity-60 border-slate-300 dark:border-slate-800 select-none cursor-not-allowed"
+              title="Fitur konfigurasi sistem hanya dapat diakses melalui Aplikasi Mobile (App Only)"
             >
               <div className="flex items-center gap-3.5">
-                <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
+                <div className="p-3 rounded-xl bg-slate-500/10 text-slate-400">
                   <Sliders className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{t('system_settings')}</h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{t('system_settings')}</h4>
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[10px] font-bold border border-amber-500/30">
+                      <Lock className="w-3 h-3" />
+                      APP ONLY
+                    </span>
+                  </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">{t('system_sub')}</p>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-400" />
+              <Lock className="w-5 h-5 text-slate-400" />
             </div>
 
             <div
@@ -231,9 +238,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           </div>
         </div>
       ) : activeSubpage === 'system' ? (
-        /* Subpage: System Settings */
-        <form onSubmit={handleSave} className="space-y-6 animate-fade-in">
-          <h3 className="font-extrabold text-base text-slate-900 dark:text-white">{t('system_settings')}</h3>
+        /* Subpage: System Settings (App Only) */
+        <form onSubmit={handleSave} className="space-y-6 animate-fade-in opacity-60 pointer-events-none select-none">
+          <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center justify-between">
+            <span>{t('system_settings')}</span>
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-bold border border-amber-500/30">
+              <Lock className="w-3.5 h-3.5" />
+              Akses Khusus Aplikasi Mobile (App Only)
+            </span>
+          </h3>
 
           {errorMsg && (
             <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs font-semibold">

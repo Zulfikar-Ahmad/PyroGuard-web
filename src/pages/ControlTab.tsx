@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, Wind, Droplet, Siren, Flame, RotateCcw, Terminal, Trash2 } from 'lucide-react';
+import { Cpu, Wind, Droplet, Siren, Terminal, Trash2, Lock } from 'lucide-react';
 import { TelemetryState } from '../types';
 import { warehouseService } from '../services/warehouseService';
 import { useLanguage } from '../context/LanguageContext';
@@ -25,43 +25,26 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
             Arduino Nano V3: <span className="font-mono font-extrabold text-slate-900 dark:text-white">{state.nanoStatus}</span>
           </p>
         </div>
-        {state.isEmergencyMode ? (
-          <button
-            onClick={() => warehouseService.resetEmergency()}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold transition shadow-lg shadow-emerald-500/20 active:scale-95"
-          >
-            <RotateCcw className="w-4 h-4" />
-            {t('reset_emergency')}
-          </button>
-        ) : (
-          <button
-            onClick={() => warehouseService.triggerEmergencySimulation()}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold transition active:scale-95"
-          >
-            <Flame className="w-4 h-4" />
-            {t('test_alarm')}
-          </button>
-        )}
+
+        {/* Lock Banner for Web Users */}
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold">
+          <Lock className="w-4 h-4 flex-shrink-0" />
+          <span>Fitur Kontrol Eksklusif Aplikasi Mobile (App Only)</span>
+        </div>
       </div>
 
-      {/* Grid Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Grid Controls (Disabled / Greyed Out on Web) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 opacity-60 pointer-events-none select-none">
         {/* Exhaust Fan */}
-        <div className="p-6 rounded-2xl glass-card space-y-4 flex flex-col justify-between hover:border-cyan-500/40 transition duration-300">
+        <div className="p-6 rounded-2xl glass-card space-y-4 flex flex-col justify-between border-slate-300 dark:border-slate-800">
           <div>
             <div className="flex items-center justify-between">
               <div className="p-3 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 shadow-inner">
                 <Wind className="w-6 h-6" />
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={state.exhaustFan}
-                  onChange={(e) => warehouseService.setExhaust(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-12 h-6 bg-slate-300/60 peer-focus:outline-none rounded-full peer dark:bg-slate-700/60 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500 shadow-inner"></div>
-              </label>
+              <span className="px-2.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px] font-extrabold text-slate-500">
+                APP ONLY
+              </span>
             </div>
             <div className="mt-4">
               <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{t('exhaust_fan')}</h4>
@@ -79,21 +62,15 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
         </div>
 
         {/* Water Sprinkler */}
-        <div className="p-6 rounded-2xl glass-card space-y-4 flex flex-col justify-between hover:border-blue-500/40 transition duration-300">
+        <div className="p-6 rounded-2xl glass-card space-y-4 flex flex-col justify-between border-slate-300 dark:border-slate-800">
           <div>
             <div className="flex items-center justify-between">
               <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-inner">
                 <Droplet className="w-6 h-6" />
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={state.sprinkler}
-                  onChange={(e) => warehouseService.setSprinkler(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-12 h-6 bg-slate-300/60 peer-focus:outline-none rounded-full peer dark:bg-slate-700/60 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 shadow-inner"></div>
-              </label>
+              <span className="px-2.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px] font-extrabold text-slate-500">
+                APP ONLY
+              </span>
             </div>
             <div className="mt-4">
               <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{t('sprinkler')}</h4>
@@ -111,18 +88,15 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
         </div>
 
         {/* Siren Alarm */}
-        <div className={`p-6 rounded-2xl glass-card space-y-4 flex flex-col justify-between transition duration-300 ${state.sirenAlarm ? 'border-red-500/60 shadow-lg shadow-red-500/10' : 'hover:border-red-500/40'}`}>
+        <div className="p-6 rounded-2xl glass-card space-y-4 flex flex-col justify-between border-slate-300 dark:border-slate-800">
           <div>
             <div className="flex items-center justify-between">
-              <div className={`p-3 rounded-2xl ${state.sirenAlarm ? 'bg-red-500/20 text-red-500 animate-bounce' : 'bg-red-500/10 text-red-500'}`}>
+              <div className="p-3 rounded-2xl bg-red-500/10 text-red-500">
                 <Siren className="w-6 h-6" />
               </div>
-              <button
-                onClick={() => warehouseService.setSiren(!state.sirenAlarm)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold text-white transition shadow-md active:scale-95 ${state.sirenAlarm ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-500/20' : 'bg-red-600 hover:bg-red-700 shadow-red-500/20'}`}
-              >
-                {state.sirenAlarm ? t('stop_siren') : t('trigger_siren')}
-              </button>
+              <span className="px-2.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px] font-extrabold text-slate-500">
+                APP ONLY
+              </span>
             </div>
             <div className="mt-4">
               <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{t('siren')}</h4>
@@ -140,7 +114,7 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
         </div>
       </div>
 
-      {/* MQTT Terminal Console */}
+      {/* MQTT Terminal Console (Fully Viewable on Web) */}
       <div className="p-6 rounded-2xl glass-card space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
