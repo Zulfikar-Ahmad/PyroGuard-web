@@ -98,7 +98,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
                 Max: {state.tempThreshold.toFixed(0)}°C
               </span>
               <span className={`font-bold ${!state.isDeviceConnected ? 'text-slate-400' : state.temperature >= state.tempThreshold ? 'text-red-500' : 'text-emerald-500'}`}>
-                {!state.isDeviceConnected ? 'Offline' : state.temperature >= state.tempThreshold ? 'Tinggi' : 'Normal'}
+                {!state.isDeviceConnected ? t('status_offline') : state.temperature >= state.tempThreshold ? t('status_high') : t('status_normal')}
               </span>
             </div>
           </div>
@@ -125,9 +125,9 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
               />
             </div>
             <div className="flex justify-between items-center text-[11px] font-medium">
-              <span className="text-slate-500 dark:text-slate-400">Ideal: 40% - 70%</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('ideal_hum')}</span>
               <span className="font-bold text-sky-500">
-                {!state.isDeviceConnected ? 'Offline' : state.humidity > 70 ? 'Lembap' : state.humidity < 40 ? 'Kering' : 'Optimum'}
+                {!state.isDeviceConnected ? t('status_offline') : state.humidity > 70 ? t('status_humid') : state.humidity < 40 ? t('status_dry') : t('status_optimum')}
               </span>
             </div>
           </div>
@@ -158,7 +158,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
                 Max: {state.smokeThreshold.toFixed(0)}%
               </span>
               <span className={`font-bold ${!state.isDeviceConnected ? 'text-slate-400' : state.smoke >= state.smokeThreshold ? 'text-red-500' : 'text-purple-500'}`}>
-                {!state.isDeviceConnected ? 'Offline' : state.smoke >= state.smokeThreshold ? 'Bahaya' : 'Bersih'}
+                {!state.isDeviceConnected ? t('status_offline') : state.smoke >= state.smokeThreshold ? t('status_danger') : t('status_clean')}
               </span>
             </div>
           </div>
@@ -185,9 +185,9 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
               />
             </div>
             <div className="flex justify-between items-center text-[11px] font-medium">
-              <span className="text-slate-500 dark:text-slate-400">Sensor Inframerah</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('infra_sensor')}</span>
               <span className={`font-bold ${!state.isDeviceConnected ? 'text-slate-400' : state.flameDetected ? 'text-red-500' : 'text-emerald-500'}`}>
-                {!state.isDeviceConnected ? 'Standby' : state.flameDetected ? 'WASPADA' : 'Aktif'}
+                {!state.isDeviceConnected ? t('status_standby') : state.flameDetected ? t('status_alert') : t('status_active')}
               </span>
             </div>
           </div>
@@ -199,20 +199,20 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">
-              Grafik Real-Time Telemetri Gudang
+              {t('chart_title')}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Fluktuasi Suhu (°C) & Kelembapan (%) dari Waktu ke Waktu
+              {t('chart_desc')}
             </p>
           </div>
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-orange-500 shadow-sm inline-block" />
-              <span className="text-slate-700 dark:text-slate-300 font-bold">Suhu (°C)</span>
+              <span className="text-slate-700 dark:text-slate-300 font-bold">{t('col_temp')}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-sky-400 shadow-sm inline-block" />
-              <span className="text-slate-700 dark:text-slate-300 font-bold">Kelembapan (%)</span>
+              <span className="text-slate-700 dark:text-slate-300 font-bold">{t('col_hum')}</span>
             </div>
           </div>
         </div>
