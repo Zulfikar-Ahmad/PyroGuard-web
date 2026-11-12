@@ -2,40 +2,43 @@ import React from 'react';
 import { AlertTriangle, Flame, ShieldAlert, ShieldCheck, Thermometer, Droplets, CloudRain, WifiOff } from 'lucide-react';
 import { TelemetryState } from '../types';
 import { LineChart } from '../components/LineChart';
+import { useLanguage } from '../context/LanguageContext';
 
 interface DashboardTabProps {
   state: TelemetryState;
 }
 
 export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
+  const { t } = useLanguage();
+
   const getStatusConfig = () => {
     if (!state.isDeviceConnected || state.systemStatus === 'Offline') {
       return {
         bgColor: 'bg-slate-500/15 border-slate-500/40 text-slate-600 dark:text-slate-400 shadow-lg shadow-slate-500/10',
         icon: WifiOff,
-        title: 'STATUS GUDANG: SYSTEM OFFLINE',
-        desc: 'Tidak ada data stream MQTT dari ESP32. Statistik dikembalikan ke 0 sampai perangkat aktif kembali.',
+        title: t('status_offline_title'),
+        desc: t('status_offline_desc'),
       };
     } else if (state.systemStatus === 'Bahaya') {
       return {
         bgColor: 'bg-red-500/15 border-red-500/40 text-red-600 dark:text-red-400 shadow-lg shadow-red-500/10',
         icon: AlertTriangle,
-        title: 'STATUS GUDANG: BAHAYA KEBAKARAN!',
+        title: t('status_danger_title'),
         desc: 'Pendeteksi api / asap mendeteksi bahaya! Sirine darurat aktif.',
       };
     } else if (state.systemStatus === 'Peringatan') {
       return {
         bgColor: 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 shadow-lg shadow-amber-500/10',
         icon: ShieldAlert,
-        title: 'STATUS GUDANG: PERINGATAN WASPADA',
+        title: t('status_warning_title'),
         desc: 'Suhu atau kadar asap mendekati/melebihi ambang batas normal.',
       };
     }
     return {
       bgColor: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-lg shadow-emerald-500/10',
       icon: ShieldCheck,
-      title: 'STATUS GUDANG: SISTEM AMAN',
-      desc: 'Suhu, kelembapan, kadar asap, dan pendeteksi api berada dalam parameter normal.',
+      title: t('status_safe_title'),
+      desc: t('status_safe_desc'),
     };
   };
 
@@ -73,7 +76,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
         {/* Card Suhu */}
         <div className="p-5 rounded-2xl glass-card flex flex-col justify-between hover:border-orange-500/40 transition duration-300">
           <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs font-semibold">
-            <span>Suhu Ruangan</span>
+            <span>{t('sensor_temp')}</span>
             <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500">
               <Thermometer className="w-4 h-4" />
             </div>
@@ -104,7 +107,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
         {/* Card Kelembapan */}
         <div className="p-5 rounded-2xl glass-card flex flex-col justify-between hover:border-sky-500/40 transition duration-300">
           <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs font-semibold">
-            <span>Kelembapan Udara</span>
+            <span>{t('sensor_hum')}</span>
             <div className="p-2 rounded-xl bg-sky-500/10 text-sky-500">
               <Droplets className="w-4 h-4" />
             </div>
@@ -133,7 +136,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
         {/* Card Asap */}
         <div className="p-5 rounded-2xl glass-card flex flex-col justify-between hover:border-purple-500/40 transition duration-300">
           <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs font-semibold">
-            <span>Kadar Asap</span>
+            <span>{t('sensor_smoke')}</span>
             <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500">
               <CloudRain className="w-4 h-4" />
             </div>
@@ -164,14 +167,14 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
         {/* Card Api */}
         <div className="p-5 rounded-2xl glass-card flex flex-col justify-between hover:border-red-500/40 transition duration-300">
           <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs font-semibold">
-            <span>Detektor Api</span>
+            <span>{t('sensor_flame')}</span>
             <div className={`p-2 rounded-xl ${state.flameDetected ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-emerald-500/10 text-emerald-500'}`}>
               <Flame className="w-4 h-4" />
             </div>
           </div>
           <div className="my-3">
             <span className={`text-2xl font-black tracking-tight ${state.flameDetected ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>
-              {!state.isDeviceConnected ? 'OFFLINE' : state.flameDetected ? 'API ADA!' : 'TIDAK ADA'}
+              {!state.isDeviceConnected ? 'OFFLINE' : state.flameDetected ? t('status_flame_yes') : t('status_flame_no')}
             </span>
           </div>
           <div className="space-y-2">
