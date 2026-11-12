@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Download, Trash2, Check, BookmarkPlus, Clock } from 'lucide-react';
 import { TelemetryState } from '../types';
 import { warehouseService } from '../services/warehouseService';
+import { useLanguage } from '../context/LanguageContext';
 
 interface HistoryTabProps {
   state: TelemetryState;
@@ -10,6 +11,7 @@ interface HistoryTabProps {
 export const HistoryTab: React.FC<HistoryTabProps> = ({ state }) => {
   const [copied, setCopied] = useState(false);
   const [manualSaved, setManualSaved] = useState(false);
+  const { t } = useLanguage();
 
   const handleManualSave = () => {
     warehouseService.saveManualHistory();
@@ -41,11 +43,11 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ state }) => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-            Histori Data Sensor & Kejadian (MySQL Database)
+            {t('history_title')}
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
             <Clock className="w-3.5 h-3.5 text-blue-500" />
-            <span>Terjadwal Otomatis: Setiap jam <strong className="text-slate-800 dark:text-slate-200">{state.scheduledSaveTime} WIB</strong> & Manual Simpan</span>
+            <span>{t('history_desc')}: {state.scheduledSaveTime} WIB</span>
           </p>
         </div>
 
@@ -56,7 +58,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ state }) => {
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white text-xs font-bold shadow-md shadow-blue-500/20 transition active:scale-95"
           >
             {manualSaved ? <Check className="w-3.5 h-3.5" /> : <BookmarkPlus className="w-3.5 h-3.5" />}
-            {manualSaved ? 'Histori Tersimpan!' : 'Simpan History Manual'}
+            {manualSaved ? 'Histori Tersimpan!' : t('btn_save_manual')}
           </button>
 
           {state.logRecords.length > 0 && (
@@ -65,7 +67,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ state }) => {
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300 text-xs font-semibold transition"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Bersihkan
+              {t('btn_clear')}
             </button>
           )}
 
@@ -74,7 +76,7 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ state }) => {
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-lg shadow-emerald-500/20 transition active:scale-95"
           >
             {copied ? <Check className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
-            {copied ? 'Disalin & Diunduh!' : 'Export CSV'}
+            {copied ? 'Disalin & Diunduh!' : t('btn_export_csv')}
           </button>
         </div>
       </div>
@@ -82,19 +84,19 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({ state }) => {
       <div className="rounded-2xl glass-card overflow-hidden">
         {state.logRecords.length === 0 ? (
           <div className="p-12 text-center text-xs font-medium text-slate-500 dark:text-slate-400">
-            Belum ada data histori yang tersimpan. Klik <strong>"Simpan History Manual"</strong> atau tunggu jadwal jam {state.scheduledSaveTime} WIB.
+            {t('no_history')}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-200/60 dark:border-slate-700/60 bg-white/40 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-extrabold uppercase tracking-wider">
-                  <th className="py-3.5 px-4">Waktu Log</th>
-                  <th className="py-3.5 px-4">Suhu (°C)</th>
-                  <th className="py-3.5 px-4">Kelembapan (%)</th>
-                  <th className="py-3.5 px-4">Kadar Asap (%)</th>
-                  <th className="py-3.5 px-4">Detektor Api</th>
-                  <th className="py-3.5 px-4">Status Sistem</th>
+                  <th className="py-3.5 px-4">{t('col_time')}</th>
+                  <th className="py-3.5 px-4">{t('col_temp')}</th>
+                  <th className="py-3.5 px-4">{t('col_hum')}</th>
+                  <th className="py-3.5 px-4">{t('col_smoke')}</th>
+                  <th className="py-3.5 px-4">{t('col_flame')}</th>
+                  <th className="py-3.5 px-4">{t('col_status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100/60 dark:divide-slate-700/40 text-slate-800 dark:text-slate-200 font-medium">
