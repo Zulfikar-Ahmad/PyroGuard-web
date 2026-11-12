@@ -123,10 +123,13 @@ const translations: Translations = {
   max_smoke_label: { id: 'Batas Maksimum Kadar Asap (%)', en: 'Maximum Smoke Level Threshold (%)', ja: '最高煙濃度閾値 (%)' },
   auto_save_time_label: { id: 'Jam Terjadwal Auto-Save (HH:mm)', en: 'Scheduled Auto-Save Time (HH:mm)', ja: '自動保存予約時刻 (HH:mm)' },
   auto_save_schedule_title: { id: 'Jadwal Auto-Save History Perhari', en: 'Daily History Auto-Save Schedule', ja: '日次履歴自動保存スケジュール' },
+  auto_save_desc_prefix: { id: '📌 Setiap jam', en: '📌 Every day at', ja: '📌 毎日' },
+  auto_save_desc_suffix: { id: 'WIB, snapshot telemetri otomatis tersimpan ke MariaDB.', en: 'WIB, telemetry snapshot is automatically saved to MariaDB.', ja: 'WIB に、テレメトリスナップショットがMariaDBに自動保存されます。' },
   threshold_title: { id: 'Konfigurasi Ambang Batas Sensor (Threshold)', en: 'Sensor Threshold Configuration', ja: 'センサー閾値設定' },
   threshold_desc: { id: 'Atur batas maksimal sensor penentu alarm otomatis & aktuator.', en: 'Set maximum sensor limits for automated alarms & actuators.', ja: '自動警報およびアクチュエータの最高センサー限界を設定します。' },
   select_lang_label: { id: 'Pilih Bahasa / Select Language:', en: 'Select Language:', ja: '言語を選択:' },
   save_config: { id: 'Simpan Konfigurasi', en: 'Save Settings', ja: '設定を保存' },
+  save_success: { id: 'Konfigurasi berhasil disimpan!', en: 'Configuration saved successfully!', ja: '設定が正常に保存されました！' },
 };
 
 interface LanguageContextType {

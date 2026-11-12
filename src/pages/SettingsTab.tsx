@@ -161,7 +161,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           <h3 className="font-extrabold text-base text-slate-900 dark:text-white">{t('appearance')}</h3>
 
           <div className="p-6 rounded-2xl glass-card space-y-5">
-            <h4 className="font-extrabold text-xs text-slate-900 dark:text-white uppercase tracking-wider">{t('theme_mode')}</h4>
+            <h4 className="font-extrabold text-xs text-slate-900 dark:text-white uppercase tracking-wider">{t('THEME_MODE')}</h4>
 
             <div className="grid grid-cols-3 gap-2.5">
               <button
@@ -213,8 +213,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
                   <h5 className="font-extrabold text-xs text-slate-900 dark:text-white">Material You (Dynamic Color)</h5>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                     {isDynamicColorAvailable
-                      ? 'Status: Aktif (Android 12+) — Skema warna menyelaraskan wallpaper sistem.'
-                      : 'Status: Fallback Seed (Android 6-11) — Material You aktif otomatis pada Android 12+.'}
+                      ? t('material_you_active')
+                      : t('material_you_fallback')}
                   </p>
                 </div>
               </div>
@@ -244,7 +244,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           {savedSuccess && (
             <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2">
               <Check className="w-4 h-4" />
-              Konfigurasi berhasil disimpan!
+              {t('save_success')}
             </div>
           )}
 
@@ -262,7 +262,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
                 className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               />
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                📌 Setiap jam <strong className="text-slate-800 dark:text-slate-200">{scheduledSaveTime} WIB</strong>, snapshot telemetri otomatis tersimpan ke MariaDB.
+                {t('auto_save_desc_prefix')} <strong className="text-slate-800 dark:text-slate-200">{scheduledSaveTime}</strong> {t('auto_save_desc_suffix')}
               </p>
             </div>
           </div>
