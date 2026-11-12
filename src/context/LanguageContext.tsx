@@ -16,17 +16,36 @@ const translations: Translations = {
   nav_control: { id: 'Kontrol', en: 'Control', ja: '制御' },
   nav_history: { id: 'Histori', en: 'History', ja: '履歴' },
   nav_settings: { id: 'Pengaturan', en: 'Settings', ja: '設定' },
-  nav_logout: { id: 'Keluar', en: 'Logout', ja: 'ログアウト' },
+
+  // Settings
+  settings: { id: 'Pengaturan', en: 'Settings', ja: '設定' },
+  settings_title: { id: 'Pengaturan Aplikasi', en: 'App Settings', ja: 'アプリ設定' },
+  settings_sub: { id: 'Pilih kategori pengaturan untuk dikonfigurasi', en: 'Select a category to configure', ja: '設定するカテゴリを選択してください' },
+
+  appearance: { id: 'Tampilan & Tema', en: 'Appearance', ja: '外観とテーマ' },
+  appearance_sub: { id: 'Mode tema, Material You, dan skema warna', en: 'Theme mode, Material You, and color palette', ja: 'テーマモード、Material You、カラーパレット' },
+
+  system_settings: { id: 'Pengaturan Sistem', en: 'System Settings', ja: 'システム設定' },
+  system_sub: { id: 'Ambang batas sensor, jadwal auto-save, MQTT, MariaDB', en: 'Sensor thresholds, auto-save schedule, MQTT, MariaDB', ja: 'センサー閾値、自動保存スケジュール、MQTT、MariaDB' },
+
+  language: { id: 'Bahasa', en: 'Language', ja: '言語設定' },
+  language_sub: { id: 'Pilihan bahasa tampilan aplikasi', en: 'Select app interface language', ja: 'アプリの表示言語を選択' },
+
+  about: { id: 'Tentang PyroGuard', en: 'About PyroGuard', ja: 'PyroGuardについて' },
+  about_sub: { id: 'Informasi versi & penjelasan sistem PyroGuard', en: 'Version information & system overview', ja: 'バージョン情報とシステム概要' },
+
+  logout: { id: 'Keluar dari Akun', en: 'Log Out', ja: 'ログアウト' },
+  select_language: { id: 'Pilih Bahasa Aplikasi', en: 'Select App Language', ja: 'アプリ言語を選択' },
 
   // Status Banner
   status_offline_title: { id: 'STATUS GUDANG: SYSTEM OFFLINE', en: 'WAREHOUSE STATUS: SYSTEM OFFLINE', ja: '倉庫ステータス：システムオフライン' },
-  status_offline_desc: { id: 'Tidak ada data stream MQTT dari ESP32. Statistik dikembalikan ke 0.', en: 'No MQTT stream from ESP32. Statistics reset to 0.', ja: 'ESP32からのMQTTストリームがありません。統計は0にリセットされます。' },
+  status_offline_desc: { id: 'Tidak ada data stream MQTT dari ESP32. Statistik dikembalikan ke 0.', en: 'No MQTT data stream from ESP32. Statistics reset to 0.', ja: 'ESP32からのMQTTデータなし。統計は0にリセットされます。' },
   status_safe_title: { id: 'STATUS GUDANG: SISTEM AMAN', en: 'WAREHOUSE STATUS: SYSTEM SAFE', ja: '倉庫ステータス：システム正常' },
-  status_safe_desc: { id: 'Suhu, kelembapan, kadar asap, dan pendeteksi api berada dalam parameter normal.', en: 'Temperature, humidity, smoke level, and flame detector are within normal parameters.', ja: '温度、湿度、煙濃度、火災検知器はすべて正常範囲内です。' },
+  status_safe_desc: { id: 'Suhu, kelembapan, kadar asap, dan pendeteksi api berada dalam parameter normal.', en: 'Temperature, humidity, smoke level, and flame detector are within normal parameters.', ja: '温度、湿度、煙濃度、火災検知器は正常範囲内です。' },
   status_danger_title: { id: 'STATUS GUDANG: BAHAYA KEBAKARAN!', en: 'WAREHOUSE STATUS: FIRE DANGER!', ja: '倉庫ステータス：火災の危険！' },
   status_warning_title: { id: 'STATUS GUDANG: PERINGATAN WASPADA', en: 'WAREHOUSE STATUS: WARNING', ja: '倉庫ステータス：警告' },
 
-  // Sensor Cards
+  // Sensors
   sensor_temp: { id: 'Suhu Ruangan', en: 'Room Temperature', ja: '室温' },
   sensor_hum: { id: 'Kelembapan Udara', en: 'Air Humidity', ja: '湿度' },
   sensor_smoke: { id: 'Kadar Asap', en: 'Smoke Level', ja: '煙濃度' },
@@ -53,7 +72,6 @@ const translations: Translations = {
   theme_system: { id: 'Sistem', en: 'System', ja: 'システム' },
   theme_light: { id: 'Terang', en: 'Light', ja: 'ライト' },
   theme_dark: { id: 'Gelap', en: 'Dark', ja: 'ダーク' },
-  language: { id: 'Bahasa', en: 'Language', ja: '言語' },
   save_config: { id: 'Simpan Konfigurasi', en: 'Save Configuration', ja: '設定を保存' },
 };
 
