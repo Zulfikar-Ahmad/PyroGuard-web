@@ -44,6 +44,16 @@ const translations: Translations = {
   select_language: { id: 'Pilih Bahasa Aplikasi', en: 'Select App Language', ja: 'アプリ言語を選択' },
   back_to_settings: { id: 'Kembali ke Daftar Pengaturan', en: 'Back to Settings List', ja: '設定一覧に戻る' },
 
+  // Theme & Material You
+  THEME_MODE: { id: 'MODE TEMA', en: 'THEME MODE', ja: 'テーマモード' },
+  theme_mode: { id: 'Mode Tema', en: 'Theme Mode', ja: 'テーマモード' },
+  theme_system: { id: 'Sistem', en: 'System', ja: 'システム' },
+  theme_light: { id: 'Terang', en: 'Light', ja: 'ライト' },
+  theme_dark: { id: 'Gelap', en: 'Dark', ja: 'ダーク' },
+  material_you_active: { id: 'Status: Aktif (Android 12+) — Skema warna menyelaraskan wallpaper sistem.', en: 'Status: Active (Android 12+) — Color scheme syncs with system wallpaper.', ja: 'ステータス：アクティブ (Android 12+) — システムの壁紙とカラー同期。' },
+  material_you_fallback: { id: 'Status: Fallback Seed (Android 6-11) — Material You aktif otomatis pada Android 12+.', en: 'Status: Fallback Seed (Android 6-11) — Material You auto-activates on Android 12+.', ja: 'ステータス：フォールバック (Android 6-11) — Android 12+で自動有効化。' },
+  color_palette: { id: 'Skema Warna', en: 'Color Palette', ja: 'カラーパレット' },
+
   // Status Banner
   status_offline_title: { id: 'STATUS GUDANG: SYSTEM OFFLINE', en: 'WAREHOUSE STATUS: SYSTEM OFFLINE', ja: '倉庫ステータス：システムオフライン' },
   status_offline_desc: { id: 'Tidak ada data stream MQTT dari ESP32. Statistik dikembalikan ke 0.', en: 'No MQTT data stream from ESP32. Statistics reset to 0.', ja: 'ESP32からのMQTTデータなし。統計は0にリセットされます。' },
