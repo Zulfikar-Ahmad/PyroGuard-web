@@ -2,12 +2,15 @@ import React from 'react';
 import { Cpu, Wind, Droplet, Siren, Flame, RotateCcw, Terminal, Trash2 } from 'lucide-react';
 import { TelemetryState } from '../types';
 import { warehouseService } from '../services/warehouseService';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ControlTabProps {
   state: TelemetryState;
 }
 
 export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
+  const { t } = useLanguage();
+
   return (
     <div className="space-y-6">
       {/* Target IP Banner */}
@@ -28,7 +31,7 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold transition shadow-lg shadow-emerald-500/20 active:scale-95"
           >
             <RotateCcw className="w-4 h-4" />
-            RESET DARURAT
+            {t('reset_emergency')}
           </button>
         ) : (
           <button
@@ -36,7 +39,7 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold transition active:scale-95"
           >
             <Flame className="w-4 h-4" />
-            Tes Alarm Kebakaran
+            {t('test_alarm')}
           </button>
         )}
       </div>
@@ -61,9 +64,9 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
               </label>
             </div>
             <div className="mt-4">
-              <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">Exhaust Fan Gudang</h4>
+              <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{t('exhaust_fan')}</h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Sirkulasi udara & penyerap hawa panas/asap.
+                {t('exhaust_desc')}
               </p>
             </div>
           </div>
@@ -93,9 +96,9 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
               </label>
             </div>
             <div className="mt-4">
-              <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">Water Sprinkler</h4>
+              <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{t('sprinkler')}</h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Sistem pemadam air otomatis area gudang.
+                {t('sprinkler_desc')}
               </p>
             </div>
           </div>
@@ -122,9 +125,9 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
               </button>
             </div>
             <div className="mt-4">
-              <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">Sirine Darurat Gudang</h4>
+              <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">{t('siren')}</h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Aktifkan buzzer alarm secara manual atau otomatis.
+                {t('siren_desc')}
               </p>
             </div>
           </div>
@@ -145,7 +148,7 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
               <Terminal className="w-4 h-4" />
             </div>
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-              Konsol Perintah & Log Publikasi MQTT
+              {t('terminal_log')}
             </h3>
           </div>
           <button
@@ -153,7 +156,7 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
             className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition font-medium"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            Bersihkan Log
+            {t('btn_clear')}
           </button>
         </div>
 

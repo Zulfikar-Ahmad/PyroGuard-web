@@ -16,6 +16,7 @@ const translations: Translations = {
   nav_control: { id: 'Kontrol', en: 'Control', ja: '制御' },
   nav_history: { id: 'Histori', en: 'History', ja: '履歴' },
   nav_settings: { id: 'Pengaturan', en: 'Settings', ja: '設定' },
+  nav_logout: { id: 'Keluar', en: 'Logout', ja: 'ログアウト' },
 
   // Settings
   settings: { id: 'Pengaturan', en: 'Settings', ja: '設定' },
@@ -33,9 +34,15 @@ const translations: Translations = {
 
   about: { id: 'Tentang PyroGuard', en: 'About PyroGuard', ja: 'PyroGuardについて' },
   about_sub: { id: 'Informasi versi & penjelasan sistem PyroGuard', en: 'Version information & system overview', ja: 'バージョン情報とシステム概要' },
+  about_desc: {
+    id: 'PyroGuard adalah sistem pemantauan gudang berbasis IoT (ESP32-S3 + Arduino Nano V3) dengan protokol komunikasi MQTT real-time dan penyimpanan data histori MariaDB.',
+    en: 'PyroGuard is an IoT-based warehouse monitoring system (ESP32-S3 + Arduino Nano V3) with real-time MQTT communication protocol and MariaDB history data storage.',
+    ja: 'PyroGuardは、リアルタイムMQTT通信プロトコルとMariaDB履歴データストレージを備えたIoTベース（ESP32-S3 + Arduino Nano V3）の倉庫監視システムです。',
+  },
 
   logout: { id: 'Keluar dari Akun', en: 'Log Out', ja: 'ログアウト' },
   select_language: { id: 'Pilih Bahasa Aplikasi', en: 'Select App Language', ja: 'アプリ言語を選択' },
+  back_to_settings: { id: 'Kembali ke Daftar Pengaturan', en: 'Back to Settings List', ja: '設定一覧に戻る' },
 
   // Status Banner
   status_offline_title: { id: 'STATUS GUDANG: SYSTEM OFFLINE', en: 'WAREHOUSE STATUS: SYSTEM OFFLINE', ja: '倉庫ステータス：システムオフライン' },
@@ -50,8 +57,37 @@ const translations: Translations = {
   sensor_hum: { id: 'Kelembapan Udara', en: 'Air Humidity', ja: '湿度' },
   sensor_smoke: { id: 'Kadar Asap', en: 'Smoke Level', ja: '煙濃度' },
   sensor_flame: { id: 'Detektor Api', en: 'Flame Detector', ja: '火災検知器' },
-  status_flame_yes: { id: 'API ADA!', en: 'FIRE DETECTED!', ja: '火災検知！' },
-  status_flame_no: { id: 'TIDAK ADA', en: 'NO FIRE', ja: '火災なし' },
+  flame_detected: { id: 'API ADA!', en: 'FIRE DETECTED!', ja: '火災検知！' },
+  no_flame: { id: 'TIDAK ADA', en: 'NO FIRE', ja: '火災なし' },
+
+  ideal_hum: { id: 'Ideal: 40% - 70%', en: 'Ideal: 40% - 70%', ja: '理想範囲: 40% - 70%' },
+  infra_sensor: { id: 'Sensor Inframerah', en: 'Infrared Sensor', ja: '赤外線センサー' },
+
+  status_normal: { id: 'Normal', en: 'Normal', ja: '正常' },
+  status_high: { id: 'Tinggi', en: 'High', ja: '高温' },
+  status_humid: { id: 'Lembap', en: 'Humid', ja: '多湿' },
+  status_dry: { id: 'Kering', en: 'Dry', ja: '乾燥' },
+  status_optimum: { id: 'Optimum', en: 'Optimum', ja: '最適' },
+  status_clean: { id: 'Bersih', en: 'Clean', ja: 'クリーン' },
+  status_standby: { id: 'Standby', en: 'Standby', ja: '待機中' },
+  status_active: { id: 'Aktif', en: 'Active', ja: 'アクティブ' },
+  status_alert: { id: 'WASPADA', en: 'ALERT', ja: '警戒' },
+
+  // Chart
+  chart_title: { id: 'Grafik Real-Time Telemetri Gudang', en: 'Real-Time Warehouse Telemetry Chart', ja: 'リアルタイム倉庫テレメトリグラフ' },
+  chart_desc: { id: 'Fluktuasi Suhu (°C) & Kelembapan (%) dari Waktu ke Waktu', en: 'Temperature (°C) & Humidity (%) Fluctuations Over Time', ja: '時間の経過に伴う温度（°C）と湿度（%）の変動' },
+
+  // Control Tab
+  control_title: { id: 'Kontrol Perangkat Aktuator', en: 'Actuator Controls', ja: 'アクチュエータ制御' },
+  exhaust_fan: { id: 'Exhaust Fan Gudang', en: 'Warehouse Exhaust Fan', ja: '倉庫換気扇' },
+  exhaust_desc: { id: 'Sirkulasi udara & penyerap hawa panas/asap.', en: 'Air circulation & smoke extractor.', ja: '空気循環および煙排気装置。' },
+  sprinkler: { id: 'Water Sprinkler', en: 'Water Sprinkler', ja: 'スプリンクラー' },
+  sprinkler_desc: { id: 'Sistem pemadam air otomatis bertekanan.', en: 'Automatic pressurized water extinguisher.', ja: '自動加圧水消火装置。' },
+  siren: { id: 'Sirine & Alarm Kebakaran', en: 'Siren & Fire Alarm', ja: 'サイレン＆火災警報' },
+  siren_desc: { id: 'Peringatan suara darurat gedung gudang.', en: 'Emergency sound warning for warehouse.', ja: '倉庫緊急音声警報。' },
+  reset_emergency: { id: 'RESET DARURAT', en: 'RESET EMERGENCY', ja: '緊急リセット' },
+  test_alarm: { id: 'Tes Alarm Kebakaran', en: 'Test Fire Alarm', ja: '火災警報テスト' },
+  terminal_log: { id: 'Konsol Perintah & Log Publikasi MQTT', en: 'MQTT Command & Publication Log Console', ja: 'MQTTコマンド＆ログコンソール' },
 
   // History Tab
   history_title: { id: 'Histori Data Sensor & Kejadian', en: 'Sensor & Event Data History', ja: 'センサー・イベント履歴' },
@@ -60,19 +96,18 @@ const translations: Translations = {
   btn_clear: { id: 'Bersihkan', en: 'Clear', ja: '消去' },
   btn_export_csv: { id: 'Export CSV', en: 'Export CSV', ja: 'CSV出力' },
   no_history: { id: 'Belum ada data histori.', en: 'No history records found.', ja: '履歴データはありません。' },
+  col_time: { id: 'Waktu Log', en: 'Log Time', ja: '記録時間' },
+  col_temp: { id: 'Suhu (°C)', en: 'Temp (°C)', ja: '温度 (°C)' },
+  col_hum: { id: 'Kelembapan (%)', en: 'Humidity (%)', ja: '湿度 (%)' },
+  col_smoke: { id: 'Kadar Asap (%)', en: 'Smoke (%)', ja: '煙濃度 (%)' },
+  col_flame: { id: 'Detektor Api', en: 'Flame Detector', ja: '火災検知' },
+  col_status: { id: 'Status Sistem', en: 'System Status', ja: 'システム状態' },
 
-  // Control Tab
-  control_title: { id: 'Kontrol Perangkat Aktuator', en: 'Actuator Device Controls', ja: 'アクチュエータ制御' },
-  exhaust_fan: { id: 'Exhaust Fan Gudang', en: 'Warehouse Exhaust Fan', ja: '倉庫換気扇' },
-  sprinkler: { id: 'Water Sprinkler', en: 'Water Sprinkler', ja: 'スプリンクラー' },
-  siren_alarm: { id: 'Sirine & Alarm Kebakaran', en: 'Siren & Fire Alarm', ja: 'サイレン＆火災警報' },
-
-  // Settings
-  theme_mode: { id: 'Mode Tema', en: 'Theme Mode', ja: 'テーマモード' },
-  theme_system: { id: 'Sistem', en: 'System', ja: 'システム' },
-  theme_light: { id: 'Terang', en: 'Light', ja: 'ライト' },
-  theme_dark: { id: 'Gelap', en: 'Dark', ja: 'ダーク' },
-  save_config: { id: 'Simpan Konfigurasi', en: 'Save Configuration', ja: '設定を保存' },
+  // Forms
+  max_temp_label: { id: 'Batas Maksimum Suhu (°C)', en: 'Maximum Temperature Threshold (°C)', ja: '最高温度閾値 (°C)' },
+  max_smoke_label: { id: 'Batas Maksimum Kadar Asap (%)', en: 'Maximum Smoke Level Threshold (%)', ja: '最高煙濃度閾値 (%)' },
+  auto_save_time_label: { id: 'Jam Auto-Save History (HH:mm)', en: 'History Auto-Save Time (HH:mm)', ja: '履歴自動保存時刻 (HH:mm)' },
+  save_config: { id: 'Simpan Konfigurasi', en: 'Save Settings', ja: '設定を保存' },
 };
 
 interface LanguageContextType {
