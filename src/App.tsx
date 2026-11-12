@@ -1,15 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
-import { DashboardPage } from './pages/DashboardPage';
+import { Navigation } from './components/Navigation';
+import { SkeletonLoader } from './components/SkeletonLoader';
+import { DashboardTab } from './pages/DashboardTab';
+import { ControlTab } from './pages/ControlTab';
+import { HistoryTab } from './pages/HistoryTab';
+import { SettingsTab } from './pages/SettingsTab';
+import { warehouseService } from './services/warehouseService';
+import { TelemetryState } from './types';
 
 export const App: React.FC = () => {
-  /*
-   * Server offline mode: Auth gate bypassed so Web App opens directly to Dashboard.
-   * Authentication code and components remain preserved in src/services/authService.ts and src/components/AuthModal.tsx.
-   */
+  const [state, setState] = useState<TelemetryState>(warehouseService.getState());
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const unsubscribe = warehouseService.subscribe((newState) => {
+      setState(newState);
+      if (loading) {
+        setLoading(false);
+      }
+    });
+
+    const timer = setTimeout(() => setLoading(false), 800);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
+  }, []);
+
   return (
     <ThemeProvider>
-      <DashboardPage onLogout={() => {}} />
+      <BrowserRouter>
+        <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors relative">
+          <Navigation />
+
+          <main className="flex-1 w-full px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-10">
+            {loading ? (
+              <SkeletonLoader />
+            ) : (
+              <Routes>
+                <Route path="/" element={<DashboardTab state={state} />} />
+                <Route path="/control" element={<ControlTab state={state} />} />
+                <Route path="/history" element={<HistoryTab state={state} />} />
+                <Route path="/settings" element={<SettingsTab state={state} />} />
+              </Routes>
+            )}
+          </main>
+        </div>
+      </BrowserRouter>
     </ThemeProvider>
   );
 };

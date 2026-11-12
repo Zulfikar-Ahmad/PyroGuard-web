@@ -1,8 +1,7 @@
 import React from 'react';
-import { AlertTriangle, Flame, ShieldAlert, ShieldCheck, Thermometer, Droplets, CloudRain, WifiOff, PlayCircle } from 'lucide-react';
+import { AlertTriangle, Flame, ShieldAlert, ShieldCheck, Thermometer, Droplets, CloudRain, WifiOff } from 'lucide-react';
 import { TelemetryState } from '../types';
 import { LineChart } from '../components/LineChart';
-import { warehouseService } from '../services/warehouseService';
 
 interface DashboardTabProps {
   state: TelemetryState;
@@ -14,7 +13,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
       return {
         bgColor: 'bg-slate-500/15 border-slate-500/40 text-slate-600 dark:text-slate-400 shadow-lg shadow-slate-500/10',
         icon: WifiOff,
-        title: 'STATUS GUDANG: SYSTEM OFFLINE (PERANGKAT ESP32 MATI)',
+        title: 'STATUS GUDANG: SYSTEM OFFLINE',
         desc: 'Tidak ada data stream MQTT dari ESP32. Statistik dikembalikan ke 0 sampai perangkat aktif kembali.',
       };
     } else if (state.systemStatus === 'Bahaya') {
@@ -35,7 +34,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
     return {
       bgColor: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-lg shadow-emerald-500/10',
       icon: ShieldCheck,
-      title: 'STATUS GUDANG: SISTEM AMAN (MQTT STREAM ACTIVE)',
+      title: 'STATUS GUDANG: SISTEM AMAN',
       desc: 'Suhu, kelembapan, kadar asap, dan pendeteksi api berada dalam parameter normal.',
     };
   };
@@ -63,16 +62,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
         </div>
 
         <div className="flex items-center gap-2 self-end sm:self-center">
-          {!state.isDeviceConnected && (
-            <button
-              onClick={() => warehouseService.simulateIncomingEspStream(29.4, 64, 14, false)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-md"
-              title="Kirim Tes Packet Data Stream MQTT untuk Mengaktifkan Dashboard"
-            >
-              <PlayCircle className="w-4 h-4" />
-              <span>Simulasi Tes Stream</span>
-            </button>
-          )}
           <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-black/10 dark:bg-white/10 hidden lg:inline-block">
             {state.mqttTopic}
           </span>
@@ -84,7 +73,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
         {/* Card Suhu */}
         <div className="p-5 rounded-2xl glass-card flex flex-col justify-between hover:border-orange-500/40 transition duration-300">
           <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs font-semibold">
-            <span>Suhu Terkini (DHT22)</span>
+            <span>Suhu Ruangan</span>
             <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500">
               <Thermometer className="w-4 h-4" />
             </div>
@@ -144,7 +133,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
         {/* Card Asap */}
         <div className="p-5 rounded-2xl glass-card flex flex-col justify-between hover:border-purple-500/40 transition duration-300">
           <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs font-semibold">
-            <span>Kadar Asap (MQ-2)</span>
+            <span>Kadar Asap</span>
             <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500">
               <CloudRain className="w-4 h-4" />
             </div>
@@ -175,7 +164,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
         {/* Card Api */}
         <div className="p-5 rounded-2xl glass-card flex flex-col justify-between hover:border-red-500/40 transition duration-300">
           <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-xs font-semibold">
-            <span>Flame Sensor (Api)</span>
+            <span>Detektor Api</span>
             <div className={`p-2 rounded-xl ${state.flameDetected ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-emerald-500/10 text-emerald-500'}`}>
               <Flame className="w-4 h-4" />
             </div>
@@ -193,7 +182,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ state }) => {
               />
             </div>
             <div className="flex justify-between items-center text-[11px] font-medium">
-              <span className="text-slate-500 dark:text-slate-400">Detektor Inframerah</span>
+              <span className="text-slate-500 dark:text-slate-400">Sensor Inframerah</span>
               <span className={`font-bold ${!state.isDeviceConnected ? 'text-slate-400' : state.flameDetected ? 'text-red-500' : 'text-emerald-500'}`}>
                 {!state.isDeviceConnected ? 'Standby' : state.flameDetected ? 'WASPADA' : 'Aktif'}
               </span>
