@@ -77,7 +77,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           className="flex items-center gap-2 px-3 py-1.5 rounded-xl glass-card text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline transition"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Kembali ke Daftar Pengaturan</span>
+          <span>{t('back_to_settings')}</span>
         </button>
       )}
 
@@ -252,7 +252,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           <div className="p-5 rounded-2xl glass-card space-y-3">
             <h4 className="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-2">
               <Clock className="w-4 h-4 text-blue-500" />
-              <span>Jadwal Auto-Save History Perhari</span>
+              <span>{t('auto_save_schedule_title')}</span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
               <input
@@ -271,12 +271,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           <div className="p-5 rounded-2xl glass-card space-y-3">
             <h4 className="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-2">
               <Thermometer className="w-4 h-4 text-orange-500" />
-              <span>Konfigurasi Ambang Batas Sensor (Threshold)</span>
+              <span>{t('threshold_title')}</span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Batas Maksimum Suhu (°C)
+                  {t('max_temp_label')}
                 </label>
                 <input
                   type="number"
@@ -288,7 +288,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Batas Maksimum Kadar Asap (%)
+                  {t('max_smoke_label')}
                 </label>
                 <input
                   type="number"
@@ -316,7 +316,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
 
           <div className="p-6 rounded-2xl glass-card space-y-3">
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-              Pilih Bahasa / Select Language:
+              {t('select_lang_label')}
             </label>
             <select
               value={language}
@@ -346,7 +346,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
               </div>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              PyroGuard adalah sistem pemantauan gudang berbasis IoT (ESP32-S3 + Arduino Nano V3) dengan protokol komunikasi MQTT real-time dan penyimpan data histori MariaDB.
+              {t('about_desc')}
             </p>
           </div>
         </div>

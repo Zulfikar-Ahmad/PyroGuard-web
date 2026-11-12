@@ -85,6 +85,11 @@ const translations: Translations = {
   sprinkler_desc: { id: 'Sistem pemadam air otomatis bertekanan.', en: 'Automatic pressurized water extinguisher.', ja: '自動加圧水消火装置。' },
   siren: { id: 'Sirine & Alarm Kebakaran', en: 'Siren & Fire Alarm', ja: 'サイレン＆火災警報' },
   siren_desc: { id: 'Peringatan suara darurat gedung gudang.', en: 'Emergency sound warning for warehouse.', ja: '倉庫緊急音声警報。' },
+  actuator_status: { id: 'Status Aktuator:', en: 'Actuator Status:', ja: 'アクチュエータ状態:' },
+  alarm_status: { id: 'Status Alarm:', en: 'Alarm Status:', ja: '警報状態:' },
+  no_logs: { id: 'Tidak ada log aktivitas.', en: 'No activity logs.', ja: 'アクティビティログはありません。' },
+  stop_siren: { id: 'STOP SIREN', en: 'STOP SIREN', ja: 'サイレン停止' },
+  trigger_siren: { id: 'TRIGGER SIREN', en: 'TRIGGER SIREN', ja: 'サイレン起動' },
   reset_emergency: { id: 'RESET DARURAT', en: 'RESET EMERGENCY', ja: '緊急リセット' },
   test_alarm: { id: 'Tes Alarm Kebakaran', en: 'Test Fire Alarm', ja: '火災警報テスト' },
   terminal_log: { id: 'Konsol Perintah & Log Publikasi MQTT', en: 'MQTT Command & Publication Log Console', ja: 'MQTTコマンド＆ログコンソール' },
@@ -103,10 +108,14 @@ const translations: Translations = {
   col_flame: { id: 'Detektor Api', en: 'Flame Detector', ja: '火災検知' },
   col_status: { id: 'Status Sistem', en: 'System Status', ja: 'システム状態' },
 
-  // Forms
+  // Forms & Settings
   max_temp_label: { id: 'Batas Maksimum Suhu (°C)', en: 'Maximum Temperature Threshold (°C)', ja: '最高温度閾値 (°C)' },
   max_smoke_label: { id: 'Batas Maksimum Kadar Asap (%)', en: 'Maximum Smoke Level Threshold (%)', ja: '最高煙濃度閾値 (%)' },
-  auto_save_time_label: { id: 'Jam Auto-Save History (HH:mm)', en: 'History Auto-Save Time (HH:mm)', ja: '履歴自動保存時刻 (HH:mm)' },
+  auto_save_time_label: { id: 'Jam Terjadwal Auto-Save (HH:mm)', en: 'Scheduled Auto-Save Time (HH:mm)', ja: '自動保存予約時刻 (HH:mm)' },
+  auto_save_schedule_title: { id: 'Jadwal Auto-Save History Perhari', en: 'Daily History Auto-Save Schedule', ja: '日次履歴自動保存スケジュール' },
+  threshold_title: { id: 'Konfigurasi Ambang Batas Sensor (Threshold)', en: 'Sensor Threshold Configuration', ja: 'センサー閾値設定' },
+  threshold_desc: { id: 'Atur batas maksimal sensor penentu alarm otomatis & aktuator.', en: 'Set maximum sensor limits for automated alarms & actuators.', ja: '自動警報およびアクチュエータの最高センサー限界を設定します。' },
+  select_lang_label: { id: 'Pilih Bahasa / Select Language:', en: 'Select Language:', ja: '言語を選択:' },
   save_config: { id: 'Simpan Konfigurasi', en: 'Save Settings', ja: '設定を保存' },
 };
 
