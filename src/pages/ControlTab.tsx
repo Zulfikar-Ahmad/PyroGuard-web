@@ -71,7 +71,7 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
             </div>
           </div>
           <div className="pt-3 border-t border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center text-xs font-semibold">
-            <span className="text-slate-500 dark:text-slate-400">Status Aktuator:</span>
+            <span className="text-slate-500 dark:text-slate-400">{t('actuator_status')}</span>
             <span className={`font-bold ${state.exhaustFan ? 'text-cyan-500' : 'text-slate-400'}`}>
               {state.exhaustFan ? 'ON' : 'OFF'}
             </span>
@@ -103,7 +103,7 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
             </div>
           </div>
           <div className="pt-3 border-t border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center text-xs font-semibold">
-            <span className="text-slate-500 dark:text-slate-400">Status Aktuator:</span>
+            <span className="text-slate-500 dark:text-slate-400">{t('actuator_status')}</span>
             <span className={`font-bold ${state.sprinkler ? 'text-blue-500' : 'text-slate-400'}`}>
               {state.sprinkler ? 'ON' : 'OFF'}
             </span>
@@ -121,7 +121,7 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
                 onClick={() => warehouseService.setSiren(!state.sirenAlarm)}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold text-white transition shadow-md active:scale-95 ${state.sirenAlarm ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-500/20' : 'bg-red-600 hover:bg-red-700 shadow-red-500/20'}`}
               >
-                {state.sirenAlarm ? 'STOP SIREN' : 'TRIGGER SIREN'}
+                {state.sirenAlarm ? t('stop_siren') : t('trigger_siren')}
               </button>
             </div>
             <div className="mt-4">
@@ -132,7 +132,7 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
             </div>
           </div>
           <div className="pt-3 border-t border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center text-xs font-semibold">
-            <span className="text-slate-500 dark:text-slate-400">Status Alarm:</span>
+            <span className="text-slate-500 dark:text-slate-400">{t('alarm_status')}</span>
             <span className={`font-bold ${state.sirenAlarm ? 'text-red-500' : 'text-slate-400'}`}>
               {state.sirenAlarm ? 'ACTIVE' : 'STANDBY'}
             </span>
@@ -163,7 +163,7 @@ export const ControlTab: React.FC<ControlTabProps> = ({ state }) => {
         <div className="h-52 w-full p-4 rounded-xl bg-slate-950/90 text-slate-200 font-mono text-xs overflow-y-auto space-y-1.5 backdrop-blur-xl border border-white/10 shadow-inner scrollbar-thin">
           {state.mqttLogs.length === 0 ? (
             <div className="h-full flex items-center justify-center text-slate-500 text-xs italic">
-              Tidak ada log aktivitas.
+              {t('no_logs')}
             </div>
           ) : (
             state.mqttLogs.map((log, idx) => {
