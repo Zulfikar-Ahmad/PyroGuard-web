@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Monitor, Sun, Moon, Palette, Thermometer, CloudRain, Save, Check, Clock } from 'lucide-react';
+import { Monitor, Sun, Moon, Palette, Thermometer, CloudRain, Save, Check, Clock, Globe } from 'lucide-react';
 import { TelemetryState } from '../types';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage, LanguageCode } from '../context/LanguageContext';
 import { warehouseService } from '../services/warehouseService';
 
 interface SettingsTabProps {
@@ -10,6 +11,7 @@ interface SettingsTabProps {
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
   const { themeMode, setThemeMode, isDynamicColorAvailable } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
 
   // Settings form states
   const [tempThresh, setTempThresh] = useState(state.tempThreshold.toString());
@@ -66,17 +68,46 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
 
   return (
     <div className="space-y-8 max-w-5xl">
+      {/* Section Language Selection */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
+            <Globe className="w-5 h-5 text-purple-500" />
+            <span>{t('language')} (Bahasa)</span>
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Pilih bahasa tampilan web & aplikasi
+          </p>
+        </div>
+
+        <div className="p-6 rounded-2xl glass-card space-y-3">
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            Pilih Bahasa / Language:
+          </label>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as LanguageCode)}
+            className="w-full px-4 py-3 rounded-2xl glass-card text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          >
+            <option value="System">🌐 Default System</option>
+            <option value="English">🇺🇸 English</option>
+            <option value="Indonesian">🇮🇩 Bahasa Indonesia</option>
+            <option value="Japanese">🇯🇵 日本語 (Japanese)</option>
+          </select>
+        </div>
+      </div>
+
       {/* Section Theme & Material You */}
       <div className="space-y-4">
         <div>
-          <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Tampilan & Tema Aplikasi</h3>
+          <h3 className="font-extrabold text-base text-slate-900 dark:text-white">{t('theme_mode')}</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Pilih tema terang, gelap, atau ikuti pengaturan sistem (Mendukung Material You di Android 12+).
+            Pilih tema terang, gelap, atau ikuti pengaturan sistem.
           </p>
         </div>
 
         <div className="p-6 rounded-2xl glass-card space-y-5">
-          <h4 className="font-extrabold text-xs text-slate-900 dark:text-white uppercase tracking-wider">Mode Tema</h4>
+          <h4 className="font-extrabold text-xs text-slate-900 dark:text-white uppercase tracking-wider">{t('theme_mode')}</h4>
 
           <div className="grid grid-cols-3 gap-2.5">
             <button
@@ -89,7 +120,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
               }`}
             >
               <Monitor className="w-4 h-4" />
-              <span>Sistem</span>
+              <span>{t('theme_system')}</span>
             </button>
 
             <button
@@ -102,7 +133,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
               }`}
             >
               <Sun className="w-4 h-4" />
-              <span>Terang</span>
+              <span>{t('theme_light')}</span>
             </button>
 
             <button
@@ -115,7 +146,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
               }`}
             >
               <Moon className="w-4 h-4" />
-              <span>Gelap</span>
+              <span>{t('theme_dark')}</span>
             </button>
           </div>
 
@@ -161,7 +192,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           </div>
         )}
 
-        {/* 1. Schedule History Auto-Save Configuration */}
+        {/* Schedule History Auto-Save Configuration */}
         <div className="space-y-4">
           <div>
             <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
@@ -194,7 +225,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           </div>
         </div>
 
-        {/* 2. Threshold Configuration */}
+        {/* Threshold Configuration */}
         <div className="space-y-4">
           <div>
             <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
@@ -246,7 +277,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({ state }) => {
           className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white font-extrabold text-xs tracking-wide uppercase transition shadow-lg shadow-blue-500/25 active:scale-95 flex items-center justify-center gap-2"
         >
           <Save className="w-4 h-4" />
-          Simpan Konfigurasi Web
+          <span>{t('save_config')}</span>
         </button>
       </form>
     </div>

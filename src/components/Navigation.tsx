@@ -9,10 +9,12 @@ import {
   Clock,
   Radio,
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export const Navigation: React.FC = () => {
   const [timeString, setTimeString] = useState('');
   const location = useLocation();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const updateTime = () => {
@@ -29,10 +31,10 @@ export const Navigation: React.FC = () => {
   }, []);
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/control', label: 'Kontrol', icon: Sliders },
-    { path: '/history', label: 'Histori', icon: History },
-    { path: '/settings', label: 'Pengaturan', icon: Settings },
+    { path: '/', label: t('nav_dashboard'), icon: LayoutDashboard },
+    { path: '/control', label: t('nav_control'), icon: Sliders },
+    { path: '/history', label: t('nav_history'), icon: History },
+    { path: '/settings', label: t('nav_settings'), icon: Settings },
   ];
 
   return (
