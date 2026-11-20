@@ -1,5 +1,6 @@
 import mqtt, { MqttClient } from 'mqtt';
 import { LogRecord, SystemStatus, TelemetryState } from '../types';
+import { authService } from './authService';
 
 type Listener = (state: TelemetryState) => void;
 
@@ -10,6 +11,16 @@ class WarehouseService {
   private connectionTimer: number | null = null;
   private scheduleCheckTimer: number | null = null;
   private lastSavedDate: string = '';
+  private lastMessageAt: number = 0;
+
+  /* Authorization header for endpoints that need a logged-in user (save / clear history) */
+  private authHeaders(): Record<string, string> {
+    const token = authService.getCurrentUser()?.token;
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  }
 
   /*
    * ============================================================================
@@ -20,10 +31,10 @@ class WarehouseService {
    *    - Port: mqttPort (default: 443 WSS)
    *    - Username: mqttUser (default: "pyroadmin")
    *    - Password: mqttPass (default: "pyroguard371")
-   *    - Topic: mqttTopic (default: "warehouse/sensors/telemetry")
+   *    - Topic: mqttTopic (default: "pyroguard/telemetry")
    *
    * 2. MySQL / Backend API Details:
-   *    - API Endpoint: mysqlApiEndpoint (default: "https://api.pyroguard.app/history")
+   *    - API Endpoint: mysqlApiEndpoint (default: "https://api.pyroguard.app/api/history")
    *    - Database Host: mysqlDbHost (default: "127.0.0.1")
    *    - Database Name: mysqlDbName (default: "warehouse_iot")
    *    - Database User: mysqlDbUser (default: "pyroadmin")
@@ -43,13 +54,13 @@ class WarehouseService {
 
     // MQTT Configuration (Cloudflare Tunnel WSS to Docker VM)
     mqttHost: 'mqtt.pyroguard.app',
-    mqttPort: 1883,
-    mqttTopic: 'warehouse/sensors/telemetry',
+    mqttPort: 443,
+    mqttTopic: 'pyroguard/telemetry',
     mqttUser: 'pyroadmin',
     mqttPass: 'pyroguard371',
 
     // MySQL / REST API Configuration
-    mysqlApiEndpoint: 'https://api.pyroguard.app/history',
+    mysqlApiEndpoint: 'https://api.pyroguard.app/api/history',
     mysqlDbHost: '127.0.0.1',
     mysqlDbPort: 3306,
     mysqlDbName: 'warehouse_iot',
@@ -120,19 +131,6 @@ class WarehouseService {
   }
 
   /*
-   * Format standard SQL DATETIME string: YYYY-MM-DD HH:mm:ss for MariaDB
-   */
-  private formatSqlTimestamp(date: Date = new Date()): string {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hour = date.getHours().toString().padStart(2, '0');
-    const minute = date.getMinutes().toString().padStart(2, '0');
-    const second = date.getSeconds().toString().padStart(2, '0');
-    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
-  }
-
-  /*
    * Connect Real MQTT WebSocket Client to wss://mqtt.pyroguard.app:443
    */
   private initMqttConnection() {
@@ -168,8 +166,8 @@ class WarehouseService {
           this.onMqttMessageReceived({
             temperature: Number(payload.temperature ?? payload.temp ?? 0),
             humidity: Number(payload.humidity ?? payload.hum ?? 0),
-            smoke: Number(payload.smoke ?? payload.smk ?? 0),
-            flameDetected: Boolean(payload.flameDetected ?? payload.flame ?? false),
+            smoke: Number(payload.smoke_pct ?? payload.smoke ?? payload.smk ?? 0),
+            flameDetected: [true, 1, '1'].includes(payload.fire ?? payload.flameDetected ?? payload.flame_detected ?? false),
           });
         } catch (err) {
           console.warn('Failed to parse MQTT JSON payload:', err);
@@ -178,6 +176,13 @@ class WarehouseService {
 
       this.client.on('error', (err) => {
         console.warn('MQTT WebSocket Error:', err.message);
+        this.state.mqttLogs = [...this.state.mqttLogs, `[${this.formatTime()}] [MQTT ERROR] ${err.message}`].slice(-50);
+        this.notify();
+      });
+
+      this.client.on('close', () => {
+        this.state.mqttLogs = [...this.state.mqttLogs, `[${this.formatTime()}] [MQTT] Koneksi ke broker terputus, mencoba menyambung ulang...`].slice(-50);
+        this.notify();
       });
     } catch (e) {
       const errLog = `[${timeStr}] [MQTT EXCEPTION] ${e}`;
@@ -197,6 +202,7 @@ class WarehouseService {
   public onMqttMessageReceived(data: { temperature: number; humidity: number; smoke: number; flameDetected: boolean }) {
     const now = new Date();
     const timeStr = this.formatTime(now);
+    this.lastMessageAt = Date.now();
 
     let status: SystemStatus = 'Aman';
     if (data.flameDetected || this.state.isEmergencyMode) {
@@ -237,6 +243,13 @@ class WarehouseService {
    * If ESP32 is turned off or disconnected, reset metrics to 0 and set status to Offline
    */
   private checkConnectionTimeout() {
+    if (
+      this.state.isDeviceConnected &&
+      !this.state.isEmergencyMode &&
+      Date.now() - this.lastMessageAt > 10000
+    ) {
+      this.state = { ...this.state, isDeviceConnected: false };
+    }
     if (!this.state.isDeviceConnected) {
       if (this.state.systemStatus !== 'Offline') {
         const timeStr = this.formatTime();
@@ -351,19 +364,15 @@ class WarehouseService {
    */
   public async fetchHistoryFromApi() {
     const cleanBase = this.state.mysqlApiEndpoint.replace(/\/api\/history|\/history|\/$/, '');
-    const endpoints = [
-      `${cleanBase}/api/history`,
-      `${cleanBase}/history`,
-      this.state.mysqlApiEndpoint,
-    ];
-    const uniqueEndpoints = Array.from(new Set(endpoints));
+    const uniqueEndpoints = [`${cleanBase}/api/history`];
 
     for (const url of uniqueEndpoints) {
       try {
         if (url && url.startsWith('http')) {
           const res = await fetch(url, { method: 'GET', mode: 'cors' });
           if (res.ok) {
-            const data = await res.json();
+            const body = await res.json();
+            const data = Array.isArray(body) ? body : body?.data;
             if (Array.isArray(data)) {
               const fetchedRecords: LogRecord[] = data.map((item: {
                 id?: string | number;
@@ -405,13 +414,7 @@ class WarehouseService {
   private async syncRecordToMysqlDatabase(record: LogRecord) {
     const timeStr = this.formatTime();
     const cleanBase = this.state.mysqlApiEndpoint.replace(/\/api\/history|\/history|\/$/, '');
-    const endpoints = [
-      `${cleanBase}/api/history`,
-      `${cleanBase}/history`,
-      this.state.mysqlApiEndpoint,
-    ];
-    const uniqueEndpoints = Array.from(new Set(endpoints));
-    const sqlTimestamp = this.formatSqlTimestamp(new Date());
+    const uniqueEndpoints = [`${cleanBase}/api/history`];
 
     let lastError = '';
 
@@ -421,18 +424,13 @@ class WarehouseService {
           const res = await fetch(url, {
             method: 'POST',
             mode: 'cors',
-            headers: { 'Content-Type': 'application/json' },
+            headers: this.authHeaders(),
             body: JSON.stringify({
-              timestamp: sqlTimestamp,
               temperature: record.temperature,
               humidity: record.humidity,
               smoke: record.smoke,
               flame_detected: record.flameDetected,
               status: record.status,
-              db_host: this.state.mysqlDbHost,
-              db_name: this.state.mysqlDbName,
-              db_user: this.state.mysqlDbUser,
-              db_pass: this.state.mysqlDbPass,
             }),
           });
 
@@ -441,9 +439,8 @@ class WarehouseService {
             this.state.mqttLogs = [...this.state.mqttLogs, okLog];
             this.fetchHistoryFromApi(); // Refresh list from DB
             return;
-          } else if (res.status === 404) {
-            lastError = `HTTP 404 Not Found at ${url}`;
-            continue; // Try next candidate URL
+          } else if (res.status === 401) {
+            lastError = 'Sesi tidak valid. Silakan login ulang untuk menyimpan ke database.';
           } else {
             const errText = await res.text();
             lastError = `HTTP ${res.status}: ${errText}`;
@@ -464,10 +461,10 @@ class WarehouseService {
     const timeStr = this.formatTime();
     const newLogs = [
       ...this.state.mqttLogs,
-      `[${timeStr}] [PUBLISH] warehouse/actuator/fan -> ${value ? 'ON' : 'OFF'}`,
+      `[${timeStr}] [PUBLISH] pyroguard/control/fan -> ${value ? 'ON' : 'OFF'}`,
     ];
     if (this.client && this.client.connected) {
-      this.client.publish('warehouse/actuator/fan', value ? 'ON' : 'OFF');
+      this.client.publish('pyroguard/control/fan', value ? 'ON' : 'OFF');
     }
     this.state = { ...this.state, exhaustFan: value, mqttLogs: newLogs };
     this.notify();
@@ -477,10 +474,10 @@ class WarehouseService {
     const timeStr = this.formatTime();
     const newLogs = [
       ...this.state.mqttLogs,
-      `[${timeStr}] [PUBLISH] warehouse/actuator/sprinkler -> ${value ? 'ON' : 'OFF'}`,
+      `[${timeStr}] [PUBLISH] pyroguard/control/pump -> ${value ? 'ON' : 'OFF'}`,
     ];
     if (this.client && this.client.connected) {
-      this.client.publish('warehouse/actuator/sprinkler', value ? 'ON' : 'OFF');
+      this.client.publish('pyroguard/control/pump', value ? 'ON' : 'OFF');
     }
     this.state = { ...this.state, sprinkler: value, mqttLogs: newLogs };
     this.notify();
@@ -490,10 +487,10 @@ class WarehouseService {
     const timeStr = this.formatTime();
     const newLogs = [
       ...this.state.mqttLogs,
-      `[${timeStr}] [PUBLISH] warehouse/actuator/siren -> ${value ? 'ACTIVE' : 'STANDBY'}`,
+      `[${timeStr}] [PUBLISH] pyroguard/control/siren -> ${value ? 'ACTIVE' : 'STANDBY'}`,
     ];
     if (this.client && this.client.connected) {
-      this.client.publish('warehouse/actuator/siren', value ? 'ACTIVE' : 'STANDBY');
+      this.client.publish('pyroguard/control/siren', value ? 'ACTIVE' : 'STANDBY');
     }
     this.state = { ...this.state, sirenAlarm: value, mqttLogs: newLogs };
     this.notify();
@@ -504,10 +501,10 @@ class WarehouseService {
     const newLogs = [
       ...this.state.mqttLogs,
       `[${timeStr}] [EMERGENCY] 🔥 ALARM KEBAKARAN DITRIGGER!`,
-      `[${timeStr}] [PUBLISH] warehouse/emergency -> SIRINE & SPRINKLER DIAKTIFKAN`,
+      `[${timeStr}] [PUBLISH] pyroguard/control/emergency -> SIRINE & SPRINKLER DIAKTIFKAN`,
     ];
     if (this.client && this.client.connected) {
-      this.client.publish('warehouse/emergency', 'TRIGGERED');
+      this.client.publish('pyroguard/control/emergency', 'TRIGGERED');
     }
     this.state = {
       ...this.state,
@@ -529,7 +526,7 @@ class WarehouseService {
       `[${timeStr}] [RESET] Status darurat berhasil direset ke mode Normal.`,
     ];
     if (this.client && this.client.connected) {
-      this.client.publish('warehouse/emergency', 'RESET');
+      this.client.publish('pyroguard/control/emergency', 'RESET');
     }
     this.state = {
       ...this.state,
@@ -555,17 +552,12 @@ class WarehouseService {
 
     const timeStr = this.formatTime();
     const cleanBase = this.state.mysqlApiEndpoint.replace(/\/api\/history|\/history|\/$/, '');
-    const endpoints = [
-      `${cleanBase}/api/history`,
-      `${cleanBase}/history`,
-      this.state.mysqlApiEndpoint,
-    ];
-    const uniqueEndpoints = Array.from(new Set(endpoints));
+    const uniqueEndpoints = [`${cleanBase}/api/history`];
 
     for (const url of uniqueEndpoints) {
       try {
         if (url && url.startsWith('http')) {
-          const res = await fetch(url, { method: 'DELETE', mode: 'cors' });
+          const res = await fetch(url, { method: 'DELETE', mode: 'cors', headers: this.authHeaders() });
           if (res.ok) {
             const okLog = `[${timeStr}] [MYSQL DELETE OK] Seluruh histori berhasil dihapus dari database MariaDB via ${url}!`;
             this.state.mqttLogs = [...this.state.mqttLogs, okLog];

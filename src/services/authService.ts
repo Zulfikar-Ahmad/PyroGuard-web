@@ -47,10 +47,7 @@ class AuthService {
 
   public async login(email: string, pass: string, remember: boolean): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
-      const endpoints = [
-        `${API_BASE}/api/login`,
-        `${API_BASE}/login`,
-      ];
+      const endpoints = [`${API_BASE}/api/login`];
 
       for (const url of endpoints) {
         try {
@@ -63,11 +60,11 @@ class AuthService {
 
           const data = await res.json();
           if (res.ok && data.success && data.user) {
-            this.currentUser = data.user;
+            this.currentUser = { ...data.user, token: data.token };
             if (remember) {
-              localStorage.setItem('pyroguard_current_user', JSON.stringify(data.user));
+              localStorage.setItem('pyroguard_current_user', JSON.stringify(this.currentUser));
             } else {
-              sessionStorage.setItem('pyroguard_current_user', JSON.stringify(data.user));
+              sessionStorage.setItem('pyroguard_current_user', JSON.stringify(this.currentUser));
             }
             this.notify();
             return { success: true, user: data.user };
@@ -87,10 +84,7 @@ class AuthService {
 
   public async register(name: string, email: string, pass: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const endpoints = [
-        `${API_BASE}/api/register`,
-        `${API_BASE}/register`,
-      ];
+      const endpoints = [`${API_BASE}/api/register`];
 
       for (const url of endpoints) {
         try {
@@ -120,10 +114,7 @@ class AuthService {
 
   public async forgotPassword(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-      const endpoints = [
-        `${API_BASE}/api/forgot-password`,
-        `${API_BASE}/forgot-password`,
-      ];
+      const endpoints = [`${API_BASE}/api/forgot-password`];
 
       for (const url of endpoints) {
         try {

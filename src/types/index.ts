@@ -14,6 +14,7 @@ export interface User {
   id: string | number;
   name: string;
   email: string;
+  token?: string;
 }
 
 export interface TelemetryState {
