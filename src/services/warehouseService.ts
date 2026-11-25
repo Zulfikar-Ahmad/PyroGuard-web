@@ -1,6 +1,6 @@
 import mqtt, { MqttClient } from 'mqtt';
 import { LogRecord, SystemStatus, TelemetryState } from '../types';
-import { authService } from './authService';
+import { auth } from '../lib/firebase';
 
 type Listener = (state: TelemetryState) => void;
 
@@ -14,8 +14,8 @@ class WarehouseService {
   private lastMessageAt: number = 0;
 
   /* Authorization header for endpoints that need a logged-in user (save / clear history) */
-  private authHeaders(): Record<string, string> {
-    const token = authService.getCurrentUser()?.token;
+  private async authHeaders(): Promise<Record<string, string>> {
+    const token = await auth.currentUser?.getIdToken();
     return {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -424,7 +424,7 @@ class WarehouseService {
           const res = await fetch(url, {
             method: 'POST',
             mode: 'cors',
-            headers: this.authHeaders(),
+            headers: await this.authHeaders(),
             body: JSON.stringify({
               temperature: record.temperature,
               humidity: record.humidity,
@@ -557,7 +557,7 @@ class WarehouseService {
     for (const url of uniqueEndpoints) {
       try {
         if (url && url.startsWith('http')) {
-          const res = await fetch(url, { method: 'DELETE', mode: 'cors', headers: this.authHeaders() });
+          const res = await fetch(url, { method: 'DELETE', mode: 'cors', headers: await this.authHeaders() });
           if (res.ok) {
             const okLog = `[${timeStr}] [MYSQL DELETE OK] Seluruh histori berhasil dihapus dari database MariaDB via ${url}!`;
             this.state.mqttLogs = [...this.state.mqttLogs, okLog];

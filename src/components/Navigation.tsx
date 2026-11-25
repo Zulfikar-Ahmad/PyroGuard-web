@@ -8,13 +8,17 @@ import {
   Settings,
   Clock,
   Radio,
+  LogOut,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { authService } from '../services/authService';
 
 export const Navigation: React.FC = () => {
   const [timeString, setTimeString] = useState('');
   const location = useLocation();
   const { t } = useLanguage();
+  const { user } = useAuth();
 
   useEffect(() => {
     const updateTime = () => {
@@ -103,6 +107,29 @@ export const Navigation: React.FC = () => {
               <Clock className="w-3.5 h-3.5 text-blue-500" />
               <span>{timeString}</span>
             </div>
+
+            {user && (
+              <>
+                <div
+                  className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-xl glass-card text-xs font-bold text-slate-700 dark:text-slate-200 max-w-[180px]"
+                  title={user.email}
+                >
+                  <span className="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-600 to-sky-400 text-white flex items-center justify-center text-[11px] flex-shrink-0">
+                    {user.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="truncate">{user.name}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => authService.logout()}
+                  title={t('nav_logout')}
+                  aria-label={t('nav_logout')}
+                  className="p-2 rounded-xl glass-card text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>

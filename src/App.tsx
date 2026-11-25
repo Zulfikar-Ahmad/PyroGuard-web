@@ -8,8 +8,25 @@ import { DashboardTab } from './pages/DashboardTab';
 import { ControlTab } from './pages/ControlTab';
 import { HistoryTab } from './pages/HistoryTab';
 import { SettingsTab } from './pages/SettingsTab';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthPage } from './pages/AuthPage';
 import { warehouseService } from './services/warehouseService';
 import { TelemetryState } from './types';
+
+/** Shows the login/register page until a verified user is signed in. */
+const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0F172A] p-6">
+        <SkeletonLoader />
+      </div>
+    );
+  }
+  if (!user) return <AuthPage />;
+  return <>{children}</>;
+};
 
 export const App: React.FC = () => {
   const [state, setState] = useState<TelemetryState>(warehouseService.getState());
@@ -34,6 +51,8 @@ export const App: React.FC = () => {
   return (
     <ThemeProvider>
       <LanguageProvider>
+        <AuthProvider>
+          <AuthGate>
         <BrowserRouter>
           <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors relative">
             <Navigation />
@@ -52,6 +71,8 @@ export const App: React.FC = () => {
             </main>
           </div>
         </BrowserRouter>
+          </AuthGate>
+        </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
   );
